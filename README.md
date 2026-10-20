@@ -1,4 +1,4 @@
-# Ligella
+# Protavia
 
 A NakliOS app for designing protein binders. The browser holds the control room: load a target, set up a run, review and score the designs. The heavy AlphaFold2 design loop runs on a Mac or a rented GPU.
 
@@ -11,7 +11,7 @@ Scoring, ranking and the compute bridge are not built. See `plan/workplan.md`.
 Nothing to install. Serve the folder and open it:
 
 ```
-cd ~/Code/ligella && python3 -m http.server 8000
+cd ~/Code/protavia && python3 -m http.server 8000
 ```
 
 Then open `http://localhost:8000/` and drop in a `.pdb`, `.cif` or `.bcif` file, or type a PDB ID.

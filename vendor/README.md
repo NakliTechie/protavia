@@ -27,7 +27,7 @@ Taken from the tarball's prebuilt viewer bundle, `package/build/viewer/`:
 
 Why the prebuilt bundle and not the ES-module sources: `molstar.js` is one self-contained file that
 needs no build step, which `AGENTS.md` requires. It is an IIFE that assigns a global `molstar`, not
-an ES module, so `app/viewer.js` reads `window.molstar` instead of importing it. Ligella's own code
+an ES module, so `app/viewer.js` reads `window.molstar` instead of importing it. Protavia's own code
 stays native ES modules.
 
 Not vendored from this package: the viewer's themes, example HTML, skybox images and favicon, and

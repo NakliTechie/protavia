@@ -1,4 +1,4 @@
-# Agent notes for Ligella
+# Agent notes for Protavia
 
 Tier: **Tool** (one app, one page). It gains a compute host; if that host becomes a service others use, re-tier in writing.
 

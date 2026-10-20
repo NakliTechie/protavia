@@ -85,7 +85,7 @@ export function detectFormat(filename) {
   for (const [ext, format, binary] of table) {
     if (name.endsWith(ext)) return { format, binary, gzipped };
   }
-  throw new Error(`Ligella does not know the format of "${filename}". Use .pdb, .cif or .bcif.`);
+  throw new Error(`Protavia does not know the format of "${filename}". Use .pdb, .cif or .bcif.`);
 }
 
 export async function loadData(data, format, label) {
