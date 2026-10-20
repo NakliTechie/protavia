@@ -26,10 +26,18 @@ function contentTypeFor(pathname) {
   return (dot === -1 ? null : CONTENT_TYPES[pathname.slice(dot)]) || 'application/octet-stream';
 }
 
+// Bump this when the RESPONSE changes without the URL changing — a new header, a different media
+// type. The paths carry a pinned library version, so the bytes never change and the cache is told
+// they are immutable; that also means a header fix would otherwise stay invisible for a year behind
+// the edge cache. Versioning the cache key is what makes such a fix deployable.
+// 2: added access-control-allow-origin, so the NakliOS mirror can load the runtime.
+const CACHE_VERSION = 2;
+
 async function serveFromGitHub(url, ctx) {
   const cache = caches.default;
-  // These paths carry a pinned version (1.24.3), so a cached copy can never go stale.
-  const cacheKey = new Request(url.toString(), { method: 'GET' });
+  // The key is internal to the Worker and never reaches the browser, so the version marker here
+  // does not change the URL the page requests.
+  const cacheKey = new Request(`${url.origin}${url.pathname}?__v=${CACHE_VERSION}`, { method: 'GET' });
 
   const hit = await cache.match(cacheKey);
   if (hit) return hit;
