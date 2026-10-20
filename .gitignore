@@ -3,3 +3,5 @@
 .artifacts/
 tmp/
 node_modules/
+.dev.vars
+.wrangler/
