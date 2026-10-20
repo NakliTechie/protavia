@@ -10,7 +10,14 @@ import { ProteinMPNN } from '../vendor/proteinmpnn-web/0.1.0-10849c13/index.js';
 import { fromResidues } from '../vendor/proteinmpnn-web/0.1.0-10849c13/structure.js';
 
 const MANIFEST = 'vendor/proteinmpnn/v_48_020/manifest.json';
-const ORT_ASSETS = 'vendor/onnxruntime-web/1.24.3/';
+
+// ONNX Runtime's WebAssembly binary is 25.93 MiB, over Cloudflare's 25 MiB per-file limit. Inside
+// NakliOS the page is served from naklios.dev, which is also Cloudflare and so cannot carry it
+// either, and takes it from Protavia's own origin instead. Everywhere else — the standalone site
+// and local development — it is same-origin and relative, so a local change is what gets tested.
+const ORT_ASSETS = location.hostname.endsWith('naklios.dev')
+  ? 'https://protavia.naklitechie.com/vendor/onnxruntime-web/1.24.3/'
+  : 'vendor/onnxruntime-web/1.24.3/';
 
 /** Which checkpoint is loaded, for the interface to state plainly. */
 export const MODEL_NAME = 'ProteinMPNN v_48_020';

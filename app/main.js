@@ -36,12 +36,23 @@ const ui = {
 // can never be run against the previous structure's coordinates.
 let prepared = null;
 
+// The NakliOS host window, when the page is running inside it. The SDK is inlined in index.html and
+// does nothing when the page is standalone, but it is guarded anyway: a failed splice must not stop
+// the app from working on its own site.
+const host = {
+  ready() { try { window.naklios?.ready(); } catch { /* standalone, or no SDK */ } },
+  title(text) { try { window.naklios?.title(text); } catch { /* standalone, or no SDK */ } },
+};
+
 async function boot() {
   status.busy('Starting the viewer…');
   await viewer.create($('viewer-host'));
   ui.version.textContent = 'Mol* ' + viewer.version();
   status.clear();
   window.addEventListener('resize', () => viewer.handleResize());
+  // The viewer is up and the page can be used, which is what the host waits for.
+  host.ready();
+  host.title('Protavia');
 }
 
 /** Read a File, decompressing it first when it is gzipped. */
@@ -95,6 +106,7 @@ async function loadPdbId(raw) {
 function afterLoad(label) {
   ui.empty.hidden = true;
   ui.clear.disabled = false;
+  host.title(`Protavia \u2014 ${label}`);
   // The previous target's panel must not survive into a new one, whatever happens below.
   ui.designWrap.hidden = true;
   prepared = null;
@@ -289,6 +301,7 @@ async function clearTarget() {
   ui.designResults.replaceChildren();
   prepared = null;
   ui.file.value = '';
+  host.title('Protavia');
   status.clear();
 }
 

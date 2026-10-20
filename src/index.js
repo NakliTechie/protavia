@@ -53,6 +53,11 @@ async function serveFromGitHub(url, ctx) {
       'content-type': contentTypeFor(url.pathname),
       'cache-control': 'public, max-age=31536000, immutable',
       'x-content-type-options': 'nosniff',
+      // Inside NakliOS the page is served from naklios.dev, which is Cloudflare Pages and so has
+      // the same 25 MiB cap. Its copy of the app cannot carry this file either, and loads it from
+      // here instead. These are public third-party MIT binaries fetched without credentials, so a
+      // wildcard costs nothing: there is no private data or session behind this origin to protect.
+      'access-control-allow-origin': '*',
       // Says where the bytes came from, so a wrong or stale file is traceable from the browser.
       'x-protavia-source': 'github:NakliTechie/protavia@main',
     },
