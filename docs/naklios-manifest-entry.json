@@ -134,6 +134,62 @@
     {
       "source": "vendor/onnxruntime-web/1.24.3/LICENSE",
       "destination": "vendor/onnxruntime-web/1.24.3/LICENSE"
+    },
+    {
+      "source": "vendor/proteinmpnn/v_48_002/manifest.json",
+      "destination": "vendor/proteinmpnn/v_48_002/manifest.json"
+    },
+    {
+      "source": "vendor/proteinmpnn/v_48_002/encoder.onnx",
+      "destination": "vendor/proteinmpnn/v_48_002/encoder.onnx"
+    },
+    {
+      "source": "vendor/proteinmpnn/v_48_002/decoder-step.onnx",
+      "destination": "vendor/proteinmpnn/v_48_002/decoder-step.onnx"
+    },
+    {
+      "source": "vendor/proteinmpnn/v_48_002/decoder-full.onnx",
+      "destination": "vendor/proteinmpnn/v_48_002/decoder-full.onnx"
+    },
+    {
+      "source": "vendor/proteinmpnn/v_48_002/embedding.bin",
+      "destination": "vendor/proteinmpnn/v_48_002/embedding.bin"
+    },
+    {
+      "source": "vendor/proteinmpnn/v_48_002/LICENSE.ProteinMPNN",
+      "destination": "vendor/proteinmpnn/v_48_002/LICENSE.ProteinMPNN"
+    },
+    {
+      "source": "vendor/proteinmpnn/v_48_002/THIRD_PARTY_NOTICES.md",
+      "destination": "vendor/proteinmpnn/v_48_002/THIRD_PARTY_NOTICES.md"
+    },
+    {
+      "source": "vendor/solublempnn/v_48_020/manifest.json",
+      "destination": "vendor/solublempnn/v_48_020/manifest.json"
+    },
+    {
+      "source": "vendor/solublempnn/v_48_020/encoder.onnx",
+      "destination": "vendor/solublempnn/v_48_020/encoder.onnx"
+    },
+    {
+      "source": "vendor/solublempnn/v_48_020/decoder-step.onnx",
+      "destination": "vendor/solublempnn/v_48_020/decoder-step.onnx"
+    },
+    {
+      "source": "vendor/solublempnn/v_48_020/decoder-full.onnx",
+      "destination": "vendor/solublempnn/v_48_020/decoder-full.onnx"
+    },
+    {
+      "source": "vendor/solublempnn/v_48_020/embedding.bin",
+      "destination": "vendor/solublempnn/v_48_020/embedding.bin"
+    },
+    {
+      "source": "vendor/solublempnn/v_48_020/LICENSE.ProteinMPNN",
+      "destination": "vendor/solublempnn/v_48_020/LICENSE.ProteinMPNN"
+    },
+    {
+      "source": "vendor/solublempnn/v_48_020/THIRD_PARTY_NOTICES.md",
+      "destination": "vendor/solublempnn/v_48_020/THIRD_PARTY_NOTICES.md"
     }
   ]
 }

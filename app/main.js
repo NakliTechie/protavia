@@ -34,12 +34,14 @@ const ui = {
   designSeed: $('design-seed'),
   designRun: $('design-run'),
   designNote: $('design-note'),
+  models: $('models'),
   designResults: $('design-results'),
 };
 
-// The backbone currently handed to ProteinMPNN. Cleared whenever the target changes, so a redesign
-// can never be run against the previous structure's coordinates.
-let prepared = null;
+// Backbones handed to each checkpoint, keyed by checkpoint id. Each model encodes the structure
+// itself, so a prepared protein belongs to the model that prepared it. Cleared whenever the target
+// changes, so a run can never use the previous structure's coordinates.
+let prepared = new Map();
 
 // The NakliOS host window, when the page is running inside it. The SDK is inlined in index.html and
 // does nothing when the page is standalone, but it is guarded anyway: a failed splice must not stop
@@ -118,7 +120,7 @@ function afterLoad(label) {
   host.title(`Protavia \u2014 ${label}`);
   // The previous target's panel must not survive into a new one, whatever happens below.
   ui.designWrap.hidden = true;
-  prepared = null;
+  prepared.clear();
 
   // The structure is on screen at this point. A summary that cannot be read is worth a warning,
   // never a failure: showing the target is the job, the table beside it is a convenience.
@@ -260,7 +262,7 @@ function renderResults(found, text) {
 // --- Redesign ---------------------------------------------------------------------------------
 
 function enableDesign(summary) {
-  prepared = null;
+  prepared.clear();
   ui.designResults.replaceChildren();
 
   const protein = summary.chains.filter((c) => c.kind === 'protein');
@@ -277,10 +279,42 @@ function enableDesign(summary) {
     ui.designChain.append(opt);
   }
 
+  renderModelChoices();
   ui.designNote.textContent =
-    `${design.MODEL_NAME} runs in this browser. About 9 MB of weights load on first use.`;
+    'Everything runs in this browser. Each checkpoint is about 9 MB and loads the first time it '
+    + 'is used.';
   ui.designRun.disabled = false;
   ui.designWrap.hidden = false;
+}
+
+/** One checkbox per checkpoint, with a line saying what makes it different. */
+function renderModelChoices() {
+  if (ui.models.children.length > 0) return; // built once; the choice survives a new target
+  for (const m of design.MODELS) {
+    const row = document.createElement('label');
+    row.className = 'model';
+
+    const box = document.createElement('input');
+    box.type = 'checkbox';
+    box.value = m.id;
+    box.checked = m.id === design.MODELS[0].id;
+
+    const text = document.createElement('span');
+    const name = document.createElement('span');
+    name.className = 'model-name';
+    name.textContent = m.label;
+    const note = document.createElement('span');
+    note.className = 'model-note';
+    note.textContent = m.note;
+    text.append(name, note);
+
+    row.append(box, text);
+    ui.models.append(row);
+  }
+}
+
+function chosenModels() {
+  return [...ui.models.querySelectorAll('input:checked')].map((b) => b.value);
 }
 
 async function runRedesign() {
@@ -288,44 +322,87 @@ async function runRedesign() {
   const temperature = Number(ui.designTemp.value);
   const count = Number(ui.designCount.value);
   const seed = Number(ui.designSeed.value);
+  const ids = chosenModels();
 
   if (!(temperature > 0)) {
     status.fail('Temperature has to be greater than zero.');
     return;
   }
+  if (ids.length === 0) {
+    status.fail('Pick at least one checkpoint to run.');
+    return;
+  }
 
   ui.designRun.disabled = true;
+  ui.designResults.replaceChildren();
   status.clear();
 
-  try {
-    await design.loadModel({ onProgress: status.busy });
+  const residues = extractBackbone(viewer.loadedStructure());
+  const native = [];
+  let ran = 0;
 
-    if (!prepared) {
-      status.busy('Reading the backbone…');
-      const residues = extractBackbone(viewer.loadedStructure());
-      prepared = await design.prepare(residues);
+  try {
+    // Each checkpoint in turn, rendering as it finishes, so the first answer is readable while the
+    // rest are still running. Same chain, temperature and seed throughout, so the only thing that
+    // differs between the groups is the model.
+    for (const id of ids) {
+      const spec = design.modelById(id);
+      await design.loadModel(id, { onProgress: status.busy });
+
+      if (!prepared.has(id)) {
+        status.busy(`Reading the backbone for ${spec.label}\u2026`);
+        prepared.set(id, await design.prepare(residues, id));
+      }
+      const protein = prepared.get(id);
+
+      status.busy(`Designing chain ${chain} with ${spec.label} on ${design.activeBackend()}\u2026`);
+      const started = performance.now();
+      const results = await design.redesign(protein, { chains: [chain], temperature, count, seed });
+      const seconds = (performance.now() - started) / 1000;
+
+      if (native.length === 0) native.push(design.nativeChainSequence(protein, chain));
+      renderGroup(spec, results, native[0], seconds, ids.length > 1);
+      ran++;
     }
 
-    status.busy(`Designing chain ${chain} on ${design.activeBackend()}…`);
-    const started = performance.now();
-    const results = await design.redesign(prepared, { chains: [chain], temperature, count, seed });
-    const seconds = (performance.now() - started) / 1000;
-
-    renderDesigns(results, design.nativeChainSequence(prepared, chain));
-    status.info(
-      `${results.length} sequence${results.length === 1 ? '' : 's'} for chain ${chain} ` +
-      `in ${seconds.toFixed(1)} s on ${design.activeBackend()}.`
-    );
+    const what = ids.length === 1
+      ? design.modelById(ids[0]).label
+      : `${ids.length} checkpoints`;
+    status.info(`Chain ${chain}, ${count} sequence${count === 1 ? '' : 's'} each, ${what}, `
+      + `on ${design.activeBackend()}.`);
   } catch (e) {
-    status.fail('The redesign failed.', e.message);
+    status.fail(ran === 0 ? 'The redesign failed.' : `Stopped after ${ran} of ${ids.length} checkpoints.`,
+      e.message);
   } finally {
     ui.designRun.disabled = false;
   }
 }
 
-function renderDesigns(results, nativeSequence) {
-  ui.designResults.replaceChildren();
+/** One checkpoint's results, under a heading naming it, so a comparison reads as a comparison. */
+function renderGroup(spec, results, nativeSequence, seconds, showHeading) {
+  if (showHeading) {
+    const head = document.createElement('div');
+    head.className = 'group-head';
 
+    const name = document.createElement('span');
+    name.className = 'group-name';
+    name.textContent = spec.label;
+
+    const best = results.reduce((a, b) =>
+      (b.recovery?.fraction ?? -1) > (a.recovery?.fraction ?? -1) ? b : a, results[0]);
+    const summary = document.createElement('span');
+    summary.className = 'group-summary';
+    summary.textContent = best?.recovery
+      ? `best ${(best.recovery.fraction * 100).toFixed(1)}% \u00b7 ${seconds.toFixed(1)} s`
+      : `${seconds.toFixed(1)} s`;
+
+    head.append(name, summary);
+    ui.designResults.append(head);
+  }
+  renderDesigns(results, nativeSequence);
+}
+
+function renderDesigns(results, nativeSequence) {
   for (const r of results) {
     const box = document.createElement('div');
     box.className = 'design';
@@ -372,7 +449,7 @@ async function clearTarget() {
   ui.summaryWrap.hidden = true;
   ui.designWrap.hidden = true;
   ui.designResults.replaceChildren();
-  prepared = null;
+  prepared.clear();
   ui.file.value = '';
   host.title('Protavia');
   status.clear();
