@@ -16,6 +16,14 @@
       "destination": "app/main.js"
     },
     {
+      "source": "app/tour.js",
+      "destination": "app/tour.js"
+    },
+    {
+      "source": "app/search.js",
+      "destination": "app/search.js"
+    },
+    {
       "source": "app/status.js",
       "destination": "app/status.js"
     },
