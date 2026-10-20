@@ -94,6 +94,62 @@
   .design .seq .miss { color: var(--fg); font-weight: 600; }
 
   .hint { color: var(--mute); font-size: .78rem; margin: .4rem 0 0; }
+  .hint code { font-size: .95em; }
+
+  button.ghost {
+    border-color: transparent; background: transparent; color: var(--mute);
+    font-size: .8rem; padding: .2rem .5rem;
+  }
+  button.ghost:hover { color: var(--fg); border-color: var(--line); }
+
+  /* Starter targets: the shortest path from an empty page to something on screen. */
+  #starters { display: grid; gap: .35rem; }
+  .starter {
+    display: grid; gap: .1rem; text-align: left; padding: .45rem .6rem;
+    font: inherit; border: 1px solid var(--line); border-radius: 6px;
+    background: var(--bg); color: var(--fg); cursor: pointer;
+  }
+  .starter:hover { border-color: var(--accent); }
+  .starter-name { font-size: .85rem; font-weight: 600; }
+  .starter-note { font-size: .75rem; color: var(--mute); }
+
+  /* Search results. */
+  #results { display: grid; gap: .3rem; margin-top: .5rem; }
+  .result {
+    display: grid; gap: .1rem; text-align: left; padding: .4rem .55rem;
+    font: inherit; border: 1px solid var(--line); border-radius: 6px;
+    background: var(--bg); color: var(--fg); cursor: pointer;
+  }
+  .result:hover { border-color: var(--accent); }
+  .result-id { font-size: .78rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .result-title {
+    font-size: .74rem; color: var(--mute); line-height: 1.3;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+
+  /* The guided tour: a spotlight cut out of a dimmed overlay, with a card beside it. */
+  .tour-layer { position: fixed; inset: 0; z-index: 4000; }
+  .tour-spotlight {
+    position: fixed; z-index: 4001; border: 2px solid var(--accent); border-radius: 8px;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent),
+                0 0 0 9999px rgba(0, 0, 0, .68);
+    pointer-events: none;
+    transition: top .18s ease, left .18s ease, width .18s ease, height .18s ease;
+  }
+  .tour-card {
+    position: fixed; z-index: 4002; width: min(310px, calc(100vw - 24px));
+    padding: .85rem .95rem; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--panel); color: var(--fg); box-shadow: 0 18px 44px rgba(0, 0, 0, .5);
+  }
+  .tour-progress {
+    margin: 0 0 .35rem; color: var(--accent); font-size: .66rem;
+    font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  }
+  .tour-card h2 { margin: 0 0 .35rem; font-size: 1rem; }
+  .tour-body { margin: 0; color: var(--mute); font-size: .8rem; line-height: 1.5; }
+  .tour-actions { display: flex; align-items: center; gap: .4rem; margin-top: .8rem; }
+  .tour-spacer { flex: 1; }
+  .tour-next { border-color: var(--accent); color: var(--accent); }
 
   #drop {
     border: 1px dashed var(--line); border-radius: 6px;
@@ -141,12 +197,35 @@
     <h1>Protavia</h1>
     <span class="tag">protein binder design &middot; target review</span>
     <span class="spacer"></span>
+    <button id="tour-open" class="ghost" type="button">Tour</button>
     <span class="tag" id="viewer-version"></span>
   </header>
 
   <div id="layout">
     <aside id="side">
-      <h2>Target</h2>
+      <h2>Start here</h2>
+      <div id="starters">
+        <button class="starter" data-id="1UBQ">
+          <span class="starter-name">Ubiquitin</span>
+          <span class="starter-note">1 chain, 76 residues &middot; small and fast</span>
+        </button>
+        <button class="starter" data-id="1BRS">
+          <span class="starter-name">Barnase and barstar</span>
+          <span class="starter-note">6 chains &middot; a real protein-protein interface</span>
+        </button>
+      </div>
+
+      <h2>Find a target</h2>
+      <div class="row">
+        <input type="text" id="find" placeholder="lysozyme, or 1ubq"
+               autocapitalize="off" autocomplete="off" spellcheck="false">
+        <button id="find-go">Search</button>
+      </div>
+      <p class="hint">Searches the Protein Data Bank at rcsb.org. A four-character code like
+        <code>1ubq</code> opens straight away.</p>
+      <div id="results"></div>
+
+      <h2>Your own file</h2>
       <div class="row">
         <label class="filebtn">
           Open file&hellip;
@@ -155,15 +234,8 @@
         <button id="clear" disabled>Clear</button>
       </div>
       <div id="drop">Drop a <code>.pdb</code>, <code>.cif</code> or <code>.bcif</code> file here</div>
-      <p class="hint">The file is read in your browser. Nothing leaves this machine.</p>
-
-      <h2>Fetch by PDB&nbsp;ID</h2>
-      <div class="row">
-        <input type="text" id="pdbid" placeholder="1ubq" maxlength="8"
-               autocapitalize="off" autocomplete="off" spellcheck="false">
-        <button id="fetch">Fetch</button>
-      </div>
-      <p class="hint">Downloads from rcsb.org. This is the one action on this page that uses the network.</p>
+      <p class="hint">Read in your browser and never uploaded. Searching is the only action on this
+        page that uses the network.</p>
 
       <div id="summary-wrap" hidden>
         <h2>Structure</h2>
@@ -199,7 +271,8 @@
 
     <section id="viewer">
       <div id="viewer-host"></div>
-      <div id="viewer-empty">No target loaded.<br>Open a structure file to begin.</div>
+      <div id="viewer-empty">No target loaded.<br>Pick one of the two on the left, search for a
+        protein by name, or open a file of your own.</div>
     </section>
   </div>
 

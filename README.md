@@ -14,15 +14,16 @@ Nothing to install. Serve the folder and open it:
 cd ~/Code/protavia && python3 -m http.server 8000
 ```
 
-Then open `http://localhost:8000/` and drop in a `.pdb`, `.cif` or `.bcif` file, or type a PDB ID.
-Gzipped files work too. TODO: replace this section with the hosted link once published, and with the
+Then open `http://localhost:8000/`. Two targets are ready to open, or search the Protein Data Bank
+by name, or drop in a `.pdb`, `.cif` or `.bcif` file of your own. Gzipped files work too. A short
+tour runs on the first visit and can be reopened from **Tour** in the header. TODO: replace this section with the hosted link once published, and with the
 NakliOS window steps once it is listed in `NakliTechie/nakliOS` `apps/manifest.json`.
 
 To check the viewer against known values, load `1ubq` and `1brs` by ID. Ubiquitin reads as 1 chain,
 76 residues, 660 atoms; barnase-barstar as 6 chains (3 × 110 and 3 × 89 residues) and 5,153 atoms.
 Those match `grep -c '^ATOM\|^HETATM'` on the files from rcsb.org.
 
-To check the redesign, load `1ubq`, pick chain A, keep temperature 0.1 and seed 42, and press
+To check the redesign, open the Ubiquitin starter, keep temperature 0.1 and seed 42, and press
 **Redesign backbone**. Three sequences come back at 52.6%, 53.9% and 59.2% identity to native,
 which is the published range for ProteinMPNN given only a backbone. The same seed gives the same
 sequences on WebGPU and on WebAssembly.

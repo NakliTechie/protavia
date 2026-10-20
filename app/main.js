@@ -4,6 +4,8 @@
 import * as status from './status.js';
 import * as viewer from './viewer.js';
 import * as design from './design.js';
+import * as searchApi from './search.js';
+import * as tour from './tour.js';
 import { summarise, extractBackbone } from './structure.js';
 
 const $ = (id) => document.getElementById(id);
@@ -13,8 +15,11 @@ status.installGlobalErrorSurface();
 const ui = {
   file: $('file'),
   drop: $('drop'),
-  pdbid: $('pdbid'),
-  fetch: $('fetch'),
+  find: $('find'),
+  findGo: $('find-go'),
+  results: $('results'),
+  starters: $('starters'),
+  tourOpen: $('tour-open'),
   clear: $('clear'),
   empty: $('viewer-empty'),
   summaryWrap: $('summary-wrap'),
@@ -53,6 +58,10 @@ async function boot() {
   // The viewer is up and the page can be used, which is what the host waits for.
   host.ready();
   host.title('Protavia');
+
+  // First visit only. Deferred a moment so the panel is painted and the spotlight has something
+  // real to sit on; the tour drops any step whose target is not on screen.
+  if (tour.unseen()) setTimeout(() => tour.show(), 600);
 }
 
 /** Read a File, decompressing it first when it is gzipped. */
@@ -184,6 +193,70 @@ function renderSummary(s) {
   ui.summaryWrap.hidden = false;
 }
 
+// --- Finding a target -------------------------------------------------------------------------
+
+/** A four-character code opens directly; anything else is a search. */
+async function findTarget(raw) {
+  const text = raw.trim();
+  if (text.length === 0) return;
+
+  if (searchApi.looksLikeEntryId(text)) {
+    ui.results.replaceChildren();
+    await loadPdbId(text);
+    return;
+  }
+
+  ui.findGo.disabled = true;
+  status.clear();
+  status.busy(`Searching rcsb.org for "${text}"…`);
+  try {
+    const found = await searchApi.searchTargets(text);
+    renderResults(found, text);
+  } catch (e) {
+    status.fail('The search failed.', e.message);
+  } finally {
+    ui.findGo.disabled = false;
+  }
+}
+
+function renderResults(found, text) {
+  ui.results.replaceChildren();
+
+  if (found.length === 0) {
+    status.warn(`Nothing in the archive matches "${text}".`);
+    return;
+  }
+
+  for (const entry of found) {
+    const button = document.createElement('button');
+    button.className = 'result';
+    button.type = 'button';
+
+    const id = document.createElement('span');
+    id.className = 'result-id';
+    const parts = [entry.id];
+    if (entry.chains !== null) parts.push(`${entry.chains} chain${entry.chains === 1 ? '' : 's'}`);
+    if (entry.residues !== null) parts.push(`${entry.residues.toLocaleString()} residues`);
+    id.textContent = parts.join(' · ');
+
+    const title = document.createElement('span');
+    title.className = 'result-title';
+    // Archive titles are shouted in capitals; sentence case is easier to read down a list.
+    title.textContent = entry.title
+      ? entry.title.charAt(0) + entry.title.slice(1).toLowerCase()
+      : 'No title recorded.';
+
+    button.append(id, title);
+    button.addEventListener('click', () => {
+      ui.results.replaceChildren();
+      loadPdbId(entry.id);
+    });
+    ui.results.append(button);
+  }
+
+  status.info(`${found.length} result${found.length === 1 ? '' : 's'} for "${text}". Pick one to open it.`);
+}
+
 // --- Redesign ---------------------------------------------------------------------------------
 
 function enableDesign(summary) {
@@ -311,8 +384,13 @@ ui.file.addEventListener('change', () => {
   if (file) loadFile(file);
 });
 
-ui.fetch.addEventListener('click', () => loadPdbId(ui.pdbid.value));
-ui.pdbid.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadPdbId(ui.pdbid.value); });
+ui.findGo.addEventListener('click', () => findTarget(ui.find.value));
+ui.find.addEventListener('keydown', (e) => { if (e.key === 'Enter') findTarget(ui.find.value); });
+ui.tourOpen.addEventListener('click', () => tour.show({ force: true }));
+
+for (const button of ui.starters.querySelectorAll('.starter')) {
+  button.addEventListener('click', () => loadPdbId(button.dataset.id));
+}
 ui.clear.addEventListener('click', () => clearTarget());
 ui.designRun.addEventListener('click', () => runRedesign());
 
