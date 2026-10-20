@@ -3,7 +3,8 @@
 
 import * as status from './status.js';
 import * as viewer from './viewer.js';
-import { summarise } from './structure.js';
+import * as design from './design.js';
+import { summarise, extractBackbone } from './structure.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -21,7 +22,19 @@ const ui = {
   chains: $('chains'),
   chainsNote: $('chains-note'),
   version: $('viewer-version'),
+  designWrap: $('design-wrap'),
+  designChain: $('design-chain'),
+  designTemp: $('design-temp'),
+  designCount: $('design-count'),
+  designSeed: $('design-seed'),
+  designRun: $('design-run'),
+  designNote: $('design-note'),
+  designResults: $('design-results'),
 };
+
+// The backbone currently handed to ProteinMPNN. Cleared whenever the target changes, so a redesign
+// can never be run against the previous structure's coordinates.
+let prepared = null;
 
 async function boot() {
   status.busy('Starting the viewer…');
@@ -82,6 +95,9 @@ async function loadPdbId(raw) {
 function afterLoad(label) {
   ui.empty.hidden = true;
   ui.clear.disabled = false;
+  // The previous target's panel must not survive into a new one, whatever happens below.
+  ui.designWrap.hidden = true;
+  prepared = null;
 
   // The structure is on screen at this point. A summary that cannot be read is worth a warning,
   // never a failure: showing the target is the job, the table beside it is a convenience.
@@ -102,6 +118,7 @@ function afterLoad(label) {
   }
 
   renderSummary(summary);
+  enableDesign(summary);
   const chainWord = summary.chains.length === 1 ? 'chain' : 'chains';
   status.info(`Loaded ${label} — ${summary.chains.length} polymer ${chainWord}, ${summary.totalAtoms.toLocaleString()} atoms.`);
 }
@@ -155,11 +172,122 @@ function renderSummary(s) {
   ui.summaryWrap.hidden = false;
 }
 
+// --- Redesign ---------------------------------------------------------------------------------
+
+function enableDesign(summary) {
+  prepared = null;
+  ui.designResults.replaceChildren();
+
+  const protein = summary.chains.filter((c) => c.kind === 'protein');
+  if (protein.length === 0) {
+    ui.designWrap.hidden = true;
+    return;
+  }
+
+  ui.designChain.replaceChildren();
+  for (const c of protein) {
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = `${c.id} (${c.residues})`;
+    ui.designChain.append(opt);
+  }
+
+  ui.designNote.textContent =
+    `${design.MODEL_NAME} runs in this browser. About 9 MB of weights load on first use.`;
+  ui.designRun.disabled = false;
+  ui.designWrap.hidden = false;
+}
+
+async function runRedesign() {
+  const chain = ui.designChain.value;
+  const temperature = Number(ui.designTemp.value);
+  const count = Number(ui.designCount.value);
+  const seed = Number(ui.designSeed.value);
+
+  if (!(temperature > 0)) {
+    status.fail('Temperature has to be greater than zero.');
+    return;
+  }
+
+  ui.designRun.disabled = true;
+  status.clear();
+
+  try {
+    await design.loadModel({ onProgress: status.busy });
+
+    if (!prepared) {
+      status.busy('Reading the backbone…');
+      const residues = extractBackbone(viewer.loadedStructure());
+      prepared = await design.prepare(residues);
+    }
+
+    status.busy(`Designing chain ${chain} on ${design.activeBackend()}…`);
+    const started = performance.now();
+    const results = await design.redesign(prepared, { chains: [chain], temperature, count, seed });
+    const seconds = (performance.now() - started) / 1000;
+
+    renderDesigns(results, design.nativeChainSequence(prepared, chain));
+    status.info(
+      `${results.length} sequence${results.length === 1 ? '' : 's'} for chain ${chain} ` +
+      `in ${seconds.toFixed(1)} s on ${design.activeBackend()}.`
+    );
+  } catch (e) {
+    status.fail('The redesign failed.', e.message);
+  } finally {
+    ui.designRun.disabled = false;
+  }
+}
+
+function renderDesigns(results, nativeSequence) {
+  ui.designResults.replaceChildren();
+
+  for (const r of results) {
+    const box = document.createElement('div');
+    box.className = 'design';
+
+    const head = document.createElement('div');
+    head.className = 'head';
+
+    const rec = document.createElement('span');
+    rec.className = 'rec';
+    rec.textContent = r.recovery
+      ? `${(r.recovery.fraction * 100).toFixed(1)}% native`
+      : 'recovery n/a';
+
+    const detail = document.createElement('span');
+    detail.textContent = r.recovery ? `${r.recovery.matched}/${r.recovery.counted}` : '';
+
+    const score = document.createElement('span');
+    score.textContent = r.score === null || r.score === undefined
+      ? '' : `score ${r.score.toFixed(3)}`;
+
+    head.append(rec, detail, score);
+
+    // Marking the positions that differ from the native sequence makes the recovery figure
+    // something the reader can check rather than take on trust.
+    const seq = document.createElement('div');
+    seq.className = 'seq';
+    const designedChain = r.chainSequence;
+    for (let i = 0; i < designedChain.length; i++) {
+      const span = document.createElement('span');
+      span.className = designedChain[i] === nativeSequence[i] ? 'hit' : 'miss';
+      span.textContent = designedChain[i];
+      seq.append(span);
+    }
+
+    box.append(head, seq);
+    ui.designResults.append(box);
+  }
+}
+
 async function clearTarget() {
   await viewer.clear();
   ui.empty.hidden = false;
   ui.clear.disabled = true;
   ui.summaryWrap.hidden = true;
+  ui.designWrap.hidden = true;
+  ui.designResults.replaceChildren();
+  prepared = null;
   ui.file.value = '';
   status.clear();
 }
@@ -173,6 +301,7 @@ ui.file.addEventListener('change', () => {
 ui.fetch.addEventListener('click', () => loadPdbId(ui.pdbid.value));
 ui.pdbid.addEventListener('keydown', (e) => { if (e.key === 'Enter') loadPdbId(ui.pdbid.value); });
 ui.clear.addEventListener('click', () => clearTarget());
+ui.designRun.addEventListener('click', () => runRedesign());
 
 // Drag and drop onto the panel.
 for (const type of ['dragenter', 'dragover']) {

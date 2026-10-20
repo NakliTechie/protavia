@@ -109,3 +109,70 @@ export function summarise(structure) {
     totalAtoms: chainOffsets[chainCount],
   };
 }
+
+/**
+ * Pull per-residue backbone atoms out of a loaded Mol* structure, in the shape ProteinMPNN's
+ * `fromResidues` wants. Going through coordinates rather than re-serialising the file means every
+ * format Mol* can read is designable, not only PDB text.
+ *
+ * A residue missing any of N, CA, C or O is still returned, with those atoms absent. The library
+ * masks such a residue out rather than inventing coordinates for it.
+ *
+ * @returns {Array<{chain: string, number: number, insertionCode: string, aminoAcid: string,
+ *                  atoms: {N?: number[], CA?: number[], C?: number[], O?: number[]}}>}
+ */
+export function extractBackbone(structure) {
+  const model = structure.models[0];
+  const h = model.atomicHierarchy;
+  const conf = model.atomicConformation;
+
+  const chainIds = h.chains.auth_asym_id;
+  const seqId = h.residues.auth_seq_id;
+  const insCode = h.residues.pdbx_PDB_ins_code;
+  const compIdOfAtom = h.atoms.label_comp_id;
+  const atomName = h.atoms.label_atom_id;
+
+  const chainOffsets = h.chainAtomSegments.offsets;
+  const residueOffsets = h.residueAtomSegments.offsets;
+  const residueIndexOfAtom = h.residueAtomSegments.index;
+  const chainCount = h.chainAtomSegments.count;
+
+  const wanted = new Set(['N', 'CA', 'C', 'O']);
+  const out = [];
+
+  for (let ci = 0; ci < chainCount; ci++) {
+    const atomStart = chainOffsets[ci];
+    const atomEnd = chainOffsets[ci + 1];
+    if (atomEnd <= atomStart) continue;
+
+    const chain = String(chainIds.value(ci));
+    const rStart = residueIndexOfAtom[atomStart];
+    const rEnd = residueIndexOfAtom[atomEnd - 1];
+
+    for (let ri = rStart; ri <= rEnd; ri++) {
+      const first = residueOffsets[ri];
+      const comp = String(compIdOfAtom.value(first)).toUpperCase().trim();
+      const aminoAcid = AMINO[comp];
+      if (aminoAcid === undefined) continue;
+
+      const atoms = {};
+      for (let ai = first; ai < residueOffsets[ri + 1]; ai++) {
+        const name = String(atomName.value(ai)).toUpperCase().trim();
+        // The first alternate location wins, which is what the PDB parsers do by default.
+        if (wanted.has(name) && atoms[name] === undefined) {
+          atoms[name] = [conf.x[ai], conf.y[ai], conf.z[ai]];
+        }
+      }
+
+      out.push({
+        chain,
+        number: seqId.value(ri),
+        insertionCode: String(insCode.value(ri) || '').trim(),
+        aminoAcid,
+        atoms,
+      });
+    }
+  }
+
+  return out;
+}

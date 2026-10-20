@@ -16,6 +16,23 @@ FreeBindCraft's design loop runs hundreds of gradient steps through AlphaFold2 m
 - **WebNN** is a W3C neural-network graph API for inference. It is in Chrome origin trial in 2026 (reported from search results, not tested here); CPU works across platforms, GPU and NPU support is narrower; ONNX Runtime Web has an opt-in WebNN provider, and unsupported operators fall back to WebAssembly. It has no automatic differentiation, so it cannot run the design loop by itself.
 - **Use:** ProteinMPNN inference through ONNX Runtime Web, with the WebGPU provider first and WebNN as an option to measure. Not verified: Safari and Firefox support for either API at the versions we target.
 
+### Measured on 2026-10-20 (Chrome in the Claude desktop browser pane, macOS)
+
+ProteinMPNN `v_48_020` runs in the browser on both providers, through ONNX Runtime Web 1.24.3.
+
+| | WebGPU | WebAssembly (1 thread) |
+|---|---|---|
+| 3 sequences, ubiquitin chain A (76 residues) | 2.2 s | 2.9 s |
+| 2 sequences, barstar chain D in the 6-chain complex (87 residues) | 6.1 s | not run |
+
+Both providers returned **character-identical sequences and identical scores** for seed 42 at
+temperature 0.1. That is agreement on one structure, not a parity suite; the upstream library's own
+216 ONNX-against-PyTorch numerical checks are the real parity evidence, and its authors could not
+run WebGPU at all in their environment, so this is the first WebGPU execution recorded for it.
+
+Timings are a single observation each on one machine, not a benchmark. WebGPU's advantage here is
+small because the proteins are small and the decode is autoregressive. WebNN remains unmeasured.
+
 ## Browser-side pieces
 - ProteinMPNN: ONNX bundles exist on Hugging Face (`MurrellLab/webports`, ProteinMPNN, solubleMPNN, CA-only). Check licence and quality against the PyTorch original before relying on them.
 - ipSAE: arithmetic on a predicted aligned error matrix (Dunbrack et al., 2025). Needs the matrix from the compute host.
