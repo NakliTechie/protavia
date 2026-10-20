@@ -1,0 +1,26 @@
+# Design notes (scaffold, 2026-10-20)
+
+Few decisions are made. Each states where it comes from or that it is unverified.
+
+## The compute split
+FreeBindCraft's design loop runs hundreds of gradient steps through AlphaFold2 multimer. Source: its README and `APPLE_SILICON.md`. On an Apple M2 (24 GiB) the small ubiquitin example took 39.7 minutes with 5.23 GiB and accepted no design. So:
+
+| Tier | What | Where |
+|---|---|---|
+| 0 | view a target, redesign sequences with ProteinMPNN, score with ipSAE, filter and rank | browser only |
+| 1 | the AlphaFold2 design loop | a Mac (FreeBindCraft's Apple Silicon launcher) or a rented GPU; the browser sends settings and reads results |
+| 2 | the design loop inside the browser | research; not planned |
+
+## WebGPU and WebNN
+- **WebGPU** is the general GPU compute API. NakliOS already runs LocalMind models on it (`aiProvider: custom-webgpu` in `docs/app-contract.md` of the nakliOS repo). A custom engine could use it for anything, including gradients, at the cost of writing the kernels and the backward pass.
+- **WebNN** is a W3C neural-network graph API for inference. It is in Chrome origin trial in 2026 (reported from search results, not tested here); CPU works across platforms, GPU and NPU support is narrower; ONNX Runtime Web has an opt-in WebNN provider, and unsupported operators fall back to WebAssembly. It has no automatic differentiation, so it cannot run the design loop by itself.
+- **Use:** ProteinMPNN inference through ONNX Runtime Web, with the WebGPU provider first and WebNN as an option to measure. Not verified: Safari and Firefox support for either API at the versions we target.
+
+## Browser-side pieces
+- ProteinMPNN: ONNX bundles exist on Hugging Face (`MurrellLab/webports`, ProteinMPNN, solubleMPNN, CA-only). Check licence and quality against the PyTorch original before relying on them.
+- ipSAE: arithmetic on a predicted aligned error matrix (Dunbrack et al., 2025). Needs the matrix from the compute host.
+- Shape complementarity (`sc-rs`) and surface area (FreeSASA): small compiled libraries that could target WebAssembly; unverified.
+- OpenMM relaxation: no WebAssembly build found; leave on the compute host.
+
+## Not in scope yet
+The design loop in the browser, MD simulation, wet-lab handoff, sharing designs, AI chat.
