@@ -25,6 +25,12 @@ ProteinMPNN `v_48_020` runs in the browser on both providers, through ONNX Runti
 | 3 sequences, ubiquitin chain A (76 residues) | 2.2 s | 2.9 s |
 | 2 sequences, barstar chain D in the 6-chain complex (87 residues) | 6.1 s | not run |
 
+Those two rows were taken while a Chromium build was compiling on the same machine. Repeated on an
+otherwise idle machine at 14:20, against the deployed site, the same runs took **0.6 s** and
+**2.8 s** on WebGPU. So the figures above are roughly twice the uncontended cost, and none of these
+numbers is a benchmark. What did not change under load is the output: every run returned
+character-identical sequences and identical scores.
+
 Both providers returned **character-identical sequences and identical scores** for seed 42 at
 temperature 0.1. That is agreement on one structure, not a parity suite; the upstream library's own
 216 ONNX-against-PyTorch numerical checks are the real parity evidence, and its authors could not
