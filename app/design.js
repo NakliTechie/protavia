@@ -11,11 +11,16 @@ import { fromResidues } from '../vendor/proteinmpnn-web/0.1.0-10849c13/structure
 
 const MANIFEST = 'vendor/proteinmpnn/v_48_020/manifest.json';
 
-// ONNX Runtime's WebAssembly binary is 25.93 MiB, over Cloudflare's 25 MiB per-file limit. Inside
-// NakliOS the page is served from naklios.dev, which is also Cloudflare and so cannot carry it
-// either, and takes it from Protavia's own origin instead. Everywhere else — the standalone site
-// and local development — it is same-origin and relative, so a local change is what gets tested.
-const ORT_ASSETS = location.hostname.endsWith('naklios.dev')
+// ONNX Runtime's WebAssembly binary is 25.93 MiB, over Cloudflare's 25 MiB per-file limit, so the
+// NakliOS mirror of this app deliberately does not carry it and takes it from Protavia's own origin
+// instead. Everywhere else — the standalone site and local development — it is same-origin and
+// relative, so a local change is what gets tested.
+//
+// The test is the mirror's path, not its hostname. Keying on naklios.dev looked right and was
+// wrong: the host is also served from 127.0.0.1 when it is checked locally, which would have sent
+// that check to a relative path the mirror does not have.
+const IN_MIRROR = location.pathname.includes('/apps/protavia/');
+const ORT_ASSETS = IN_MIRROR
   ? 'https://protavia.naklitechie.com/vendor/onnxruntime-web/1.24.3/'
   : 'vendor/onnxruntime-web/1.24.3/';
 
