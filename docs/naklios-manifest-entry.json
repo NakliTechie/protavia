@@ -122,6 +122,18 @@
     {
       "source": "vendor/proteinmpnn/v_48_020/THIRD_PARTY_NOTICES.md",
       "destination": "vendor/proteinmpnn/v_48_020/THIRD_PARTY_NOTICES.md"
+    },
+    {
+      "source": "vendor/onnxruntime-web/1.24.3/ort.webgpu.bundle.min.mjs",
+      "destination": "vendor/onnxruntime-web/1.24.3/ort.webgpu.bundle.min.mjs"
+    },
+    {
+      "source": "vendor/onnxruntime-web/1.24.3/ort-wasm-simd-threaded.asyncify.mjs",
+      "destination": "vendor/onnxruntime-web/1.24.3/ort-wasm-simd-threaded.asyncify.mjs"
+    },
+    {
+      "source": "vendor/onnxruntime-web/1.24.3/LICENSE",
+      "destination": "vendor/onnxruntime-web/1.24.3/LICENSE"
     }
   ]
 }
