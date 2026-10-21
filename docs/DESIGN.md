@@ -14,7 +14,19 @@ FreeBindCraft's design loop runs hundreds of gradient steps through AlphaFold2 m
 ## WebGPU and WebNN
 - **WebGPU** is the general GPU compute API. NakliOS already runs LocalMind models on it (`aiProvider: custom-webgpu` in `docs/app-contract.md` of the nakliOS repo). A custom engine could use it for anything, including gradients, at the cost of writing the kernels and the backward pass.
 - **WebNN** is a W3C neural-network graph API for inference. It is in Chrome origin trial in 2026 (reported from search results, not tested here); CPU works across platforms, GPU and NPU support is narrower; ONNX Runtime Web has an opt-in WebNN provider, and unsupported operators fall back to WebAssembly. It has no automatic differentiation, so it cannot run the design loop by itself.
-- **Use:** ProteinMPNN inference through ONNX Runtime Web, with the WebGPU provider first and WebNN as an option to measure. Not verified: Safari and Firefox support for either API at the versions we target.
+- **Use:** ProteinMPNN inference through ONNX Runtime Web, with the WebGPU provider first. Not verified: Safari and Firefox support for either API at the versions we target.
+
+### WebNN, measured on 2026-10-21: not available to measure
+
+`navigator.ml` is the entry point a page uses to reach WebNN, and it is absent in both browsers on
+this Mac: Chrome 155 and the Chrome 152 inside the Claude desktop app. ONNX Runtime Web's WebNN
+provider has nothing to bind to, so there is no number to compare against the WebGPU and
+WebAssembly figures below. This is an answer, not a gap: the question "is WebNN faster here" cannot
+be asked on this machine without a flag-enabled browser build, and a figure from such a build would
+not describe what anyone visiting the site gets.
+
+The open question becomes a narrower one: revisit when a shipping Chrome on macOS exposes
+`navigator.ml` by default.
 
 ### Measured on 2026-10-20 (Chrome in the Claude desktop browser pane, macOS)
 
@@ -37,7 +49,8 @@ temperature 0.1. That is agreement on one structure, not a parity suite; the ups
 run WebGPU at all in their environment, so this is the first WebGPU execution recorded for it.
 
 Timings are a single observation each on one machine, not a benchmark. WebGPU's advantage here is
-small because the proteins are small and the decode is autoregressive. WebNN remains unmeasured.
+small because the proteins are small and the decode is autoregressive. WebNN is not exposed
+by either browser on this machine, as recorded above.
 
 ## Browser-side pieces
 - ProteinMPNN: ONNX bundles exist on Hugging Face (`MurrellLab/webports`, ProteinMPNN, solubleMPNN, CA-only). Check licence and quality against the PyTorch original before relying on them.

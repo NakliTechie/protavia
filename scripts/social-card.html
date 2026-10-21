@@ -1,0 +1,60 @@
+<!doctype html>
+<!-- The 1280x640 social card, as a page so it can be rendered and screenshotted rather than drawn
+     by hand. Open it at exactly 1280x640 and capture the viewport:
+       marketing/social.png (the repository card) and the app's own og:image.
+     Type does the branding; the only picture is the one real number this project has. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Protavia social card</title>
+<style>
+  :root { --bg: #fafaf8; --fg: #1c1c1a; --mute: #6b6b66; --line: #dcdcd6; --accent: #2f6f5f; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1280px; height: 640px; overflow: hidden; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 72px 80px; display: grid; grid-template-rows: auto 1fr auto;
+  }
+  .mark { font-size: 30px; font-weight: 700; letter-spacing: -.01em; }
+  .mark span { color: var(--mute); font-weight: 400; font-size: 22px; margin-left: 14px; }
+  h1 {
+    font-size: 58px; line-height: 1.08; font-weight: 700; letter-spacing: -.025em;
+    max-width: 17ch; align-self: center;
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+  .foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 48px; }
+  .claims { display: flex; gap: 28px; font-size: 19px; color: var(--mute); }
+  .claims b { color: var(--fg); font-weight: 600; }
+  .url { font-size: 21px; color: var(--accent); font-weight: 600; }
+  .bench { position: absolute; right: 80px; top: 196px; width: 420px; }
+  .row { display: grid; grid-template-columns: 1fr 64px; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .bar { height: 10px; border-radius: 5px; background: var(--accent); }
+  .row span { font-size: 17px; color: var(--mute); font-variant-numeric: tabular-nums; text-align: right; }
+  .cap { font-size: 15px; color: var(--mute); margin-top: 6px; }
+</style>
+</head>
+<body>
+  <div class="mark">Protavia <span>protein binder design</span></div>
+
+  <h1>Redesign a protein chain in a <em>browser tab</em>, in about a second.</h1>
+
+  <div class="bench">
+    <!-- Median native-sequence recovery, the one measured number this project has.
+         Widths are proportional to the figure, so the picture cannot say something the data does not. -->
+    <div class="row"><div class="bar" style="width: 89%"></div><span>60.5%</span></div>
+    <div class="row"><div class="bar" style="width: 85%"></div><span>57.9%</span></div>
+    <div class="row"><div class="bar" style="width: 79%"></div><span>53.9%</span></div>
+    <div class="cap">Three ProteinMPNN checkpoints on ubiquitin, median recovery</div>
+  </div>
+
+  <div class="foot">
+    <div class="claims">
+      <div><b>No install.</b> No account.</div>
+      <div><b>Nothing leaves</b> the machine.</div>
+      <div><b>MIT.</b></div>
+    </div>
+    <div class="url">protavia.naklitechie.com</div>
+  </div>
+</body>
+</html>

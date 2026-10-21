@@ -1,0 +1,14 @@
+{
+  "what": "Sequence recovery of three ProteinMPNN checkpoints on the same backbone.",
+  "measured": "2026-10-21",
+  "where": "https://protavia.naklitechie.com, Chrome 155, macOS, WebGPU",
+  "target": "1UBQ chain A, 76 residues",
+  "settings": { "temperature": 0.1, "seed": 42, "sequences": 5 },
+  "seconds": 17.0,
+  "note": "Recovery is the fraction of designed positions matching the native amino acid. The model sees only the backbone, so agreement is evidence it reads the fold, not evidence the design is good.",
+  "checkpoints": [
+    { "id": "v_48_020", "label": "ProteinMPNN v_48_020", "trained": "0.20 Å backbone noise", "recovery": [59.2, 55.3, 53.9, 52.6, 51.3] },
+    { "id": "v_48_002", "label": "ProteinMPNN v_48_002", "trained": "0.02 Å backbone noise", "recovery": [59.2, 57.9, 57.9, 55.3, 53.9] },
+    { "id": "soluble_v_48_020", "label": "solubleMPNN v_48_020", "trained": "no membrane proteins", "recovery": [61.8, 60.5, 60.5, 57.9, 55.3] }
+  ]
+}
