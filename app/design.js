@@ -28,6 +28,7 @@ const ORT_ASSETS = IN_MIRROR
  * just filling a table. All three are the same architecture trained differently, so a difference in
  * their answers is a difference in what they were taught, not in how they work.
  *
+ * `short` is the name in the ranking table, where a 19rem panel has no room for the full label.
  * `note` is shown in the interface. Nine checkpoints exist in the bundle these came from; add one
  * here with its weights and hashes recorded in `vendor/README.md`.
  */
@@ -35,6 +36,7 @@ export const MODELS = [
   {
     id: 'v_48_020',
     label: 'ProteinMPNN v_48_020',
+    short: 'MPNN 020',
     manifest: 'vendor/proteinmpnn/v_48_020/manifest.json',
     note: 'The default. Trained with 0.20 Å of noise added to the backbone, which makes it tolerant '
       + 'of imperfect or predicted structures.',
@@ -42,6 +44,7 @@ export const MODELS = [
   {
     id: 'v_48_002',
     label: 'ProteinMPNN v_48_002',
+    short: 'MPNN 002',
     manifest: 'vendor/proteinmpnn/v_48_002/manifest.json',
     note: 'The same model trained with almost no backbone noise, 0.02 Å. Sharper on an accurate '
       + 'structure, less forgiving of a rough one.',
@@ -49,6 +52,7 @@ export const MODELS = [
   {
     id: 'soluble_v_48_020',
     label: 'solubleMPNN v_48_020',
+    short: 'soluble 020',
     manifest: 'vendor/solublempnn/v_48_020/manifest.json',
     note: 'Same noise as the default, but trained without membrane proteins, so it avoids designing '
       + 'the greasy surfaces that make a protein aggregate.',

@@ -21,8 +21,14 @@ its home rather than "Work & Build".
 
 ## 2. The mirror entry, in `apps/manifest.json`
 
-The entry is generated and kept at [`naklios-manifest-entry.json`](naklios-manifest-entry.json) in
-this repository: 28 files, 14.4 MiB in total, the largest 5.0 MiB. Paste it into the `apps` array.
+The entry is kept at [`naklios-manifest-entry.json`](naklios-manifest-entry.json) in this
+repository: 49 files, 33.0 MiB in total, the largest 5.0 MiB. Paste it into the `apps` array.
+
+Regenerate it with `node scripts/mirror-manifest.mjs` after adding or removing any file the page
+loads. That script walks the page's own imports rather than trusting a hand-written list, because
+the hand-written one went stale once: two modules written after it was made were left out, the
+import chain broke at the first missing file, and the app stopped booting inside the host with no
+visible error. The script exits 1 when the committed file is out of date.
 
 **What is deliberately absent:** `vendor/onnxruntime-web/`. naklios.dev is Cloudflare Pages, which
 caps a single file at 25 MiB, and that directory holds a 25.93 MiB WebAssembly binary. The mirror
