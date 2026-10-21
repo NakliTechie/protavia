@@ -49,6 +49,7 @@ Chirag asked on 2026-10-20 whether FreeBindCraft could run as a browser app in N
 | `docs/DESIGN.md` | the compute split, WebGPU and WebNN, and what is unverified |
 | `AGENTS.md` | rules for agents working in this repo |
 | `plan/` | history, pending and workplan (kept outside git) |
+| `tests/` | `node --test tests/*.test.mjs` — 63 tests, no dependencies |
 
 ## Licence
 
