@@ -14,16 +14,14 @@
 }
 </script>
 <style>
+  /* Light, whatever the operating system is set to. A structure is read against a pale
+     background in every journal and every viewer in this field, and a reader comparing this page
+     with a paper should not have to adjust. `color-scheme: light` also keeps the browser's own
+     form controls and scrollbars light, which a dark system theme would otherwise invert. */
   :root {
-    color-scheme: light dark;
+    color-scheme: light;
     --bg: #fafaf8; --panel: #f2f2ee; --fg: #1c1c1a; --mute: #6b6b66;
     --line: #dcdcd6; --accent: #2f6f5f; --warn: #8a4b2a; --err: #9b2c2c;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #161615; --panel: #1f1f1d; --fg: #ecece8; --mute: #9a9a93;
-      --line: #34342f; --accent: #6fbfa6; --warn: #d79a6a; --err: #e08585;
-    }
   }
   * { box-sizing: border-box; }
   /* Several elements below set an explicit `display`, which would otherwise beat `[hidden]`. */

@@ -52,6 +52,10 @@ Chirag asked on 2026-10-20 whether FreeBindCraft could run as a browser app in N
 
 ## Licence
 
-Code: MIT (`LICENSE`). Mol*, the vendored structure viewer, is MIT. FreeBindCraft and BindCraft are
-MIT; model weights (AlphaFold2 parameters, ProteinMPNN) carry their own licences, to be recorded in
-`vendor/README.md` when they are added.
+Code: MIT (`LICENSE`). Mol*, the vendored structure viewer, is MIT. Vendored model weights and
+libraries carry their own licences, recorded with their hashes in `vendor/README.md`.
+
+The design engines Protavia can drive are separate programs. FreeBindCraft and BindCraft version 1
+are MIT. BindCraft2 is source-available and restricts hosting it for other people, which is why
+the compute bridge drives a machine the person running it installed the engine on themselves.
+Details: [`docs/compute-licences.md`](docs/compute-licences.md).

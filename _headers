@@ -5,3 +5,11 @@
 
 /vendor/*
   Cache-Control: public, max-age=31536000, immutable
+
+# ONNX Runtime's loader module is served from the asset store, which answers before the Worker
+# runs, so it never passes through the Worker's CORS header. The NakliOS mirror at naklios.dev
+# points the runtime's asset path at this origin, so every file under that path must be readable
+# cross-origin, not only the WebAssembly binary the Worker streams. These are public MIT binaries
+# fetched without credentials, so a wildcard costs nothing.
+/vendor/onnxruntime-web/*
+  Access-Control-Allow-Origin: *
