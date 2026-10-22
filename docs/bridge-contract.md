@@ -138,10 +138,23 @@ So "the engine is installed" and "a run can start" are, again, different things.
 the first. The second depends on what else the machine is doing, and the engine's own error says so
 clearly when it refuses.
 
-If you are checking whether a run will fit, read `vm_stat`, not `memory_pressure`. The latter
-reported "71% free" on this machine while `vm_stat` showed 0.4 GB actually free, because it counts
-reclaimable file-backed pages. That discrepancy produced a wrong diagnosis here before the right
-one.
+**Do not try to predict this from a system summary.** Three attempts failed here, and three
+different readings of the machine were wrong before the pattern was clear:
+
+| Attempt | Claimed, by metaljax | Free | Page cache | Held by the job |
+|---|---|---|---|---|
+| 09:40 | 18.6 GB | 0.1 GB | 4.4 GB | 2.2 GB |
+| 09:41 | 18.3 GB | 0.1 GB | 4.6 GB | 1.8 GB |
+| 09:46 | 19.1 GB | 0.3 GB | 3.5 GB | 0.6 GB |
+
+The ceiling is 18.0 GB, so the machine was already over the line before the job asked for
+anything, and the figure rose across the attempts rather than falling. `memory_pressure` said
+"71% free" throughout, because it counts reclaimable file-backed pages. `vm_stat` showed 2.4 GB
+free and 7.2 GB inactive before the third attempt, which read as plenty and was not: inactive
+pages are not what the allocator counts either.
+
+The honest rule is to trust the allocator's own refusal, which states its numbers, over any
+system summary — and to expect roughly 6 GB of genuine slack before a run will even begin.
 
 Raising `METALJAX_MEM_SYS_MB` would force a run through at the risk of paging the whole machine.
 That is the user's call, not the bridge's, and the bridge does not set it.
