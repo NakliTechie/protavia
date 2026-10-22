@@ -84,6 +84,14 @@
       "destination": "app/bridge.js"
     },
     {
+      "source": "app/score.js",
+      "destination": "app/score.js"
+    },
+    {
+      "source": "app/ipsae.js",
+      "destination": "app/ipsae.js"
+    },
+    {
       "source": "vendor/onnxruntime-web/1.24.3/ort.webgpu.bundle.min.mjs",
       "destination": "vendor/onnxruntime-web/1.24.3/ort.webgpu.bundle.min.mjs"
     },
@@ -198,10 +206,6 @@
     {
       "source": "vendor/onnxruntime-web/1.24.3/ort-wasm-simd-threaded.asyncify.mjs",
       "destination": "vendor/onnxruntime-web/1.24.3/ort-wasm-simd-threaded.asyncify.mjs"
-    },
-    {
-      "source": "app/ipsae.js",
-      "destination": "app/ipsae.js"
     }
   ]
 }

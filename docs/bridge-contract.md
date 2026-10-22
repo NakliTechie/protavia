@@ -99,9 +99,21 @@ Returns `{ "runId": "..." }`. The app holds the run id and nothing else; the bri
 accepts them, so the page can show work in progress rather than a spinner for forty minutes.
 
 FreeBindCraft computes ipSAE itself and can rank by it, so `metrics.ipSAE` arrives with each
-design and the bridge asks for that ranking by default. The full predicted aligned error matrix,
-which is what `app/ipsae.js` takes, is in the engine's pickle files; reading it is not written yet,
-because no run has produced one to read.
+design and the bridge asks for that ranking by default.
+
+`app/score.js` takes it from there. A design's interface score comes from the engine when it has
+one, is computed by `app/ipsae.js` when the design carries a predicted aligned error matrix
+instead, and when both exist the two are compared: agreement is recorded, and a disagreement
+beyond 0.001 is kept and marked rather than averaged away. That cross-check is worth having,
+because the two are the same published quantity computed by different people.
+
+The ipSAE column appears in the table the first time a design actually has a score, so nobody who
+only redesigns sequences in the browser sees a column of dashes. It is registered as display-only:
+shown, filterable, and refused as a sort key, because it reads one predicted pose and not whether
+a binder stays bound.
+
+The full error matrix is in the engine's pickle files, and reading it is still not written, because
+no run has produced one.
 
 `DELETE /bridge/runs/<id>` — stop it. A run started here is stoppable from here.
 

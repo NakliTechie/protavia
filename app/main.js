@@ -10,6 +10,7 @@ import { summarise, extractBackbone } from './structure.js';
 import { DesignTable, allColumns } from './table.js';
 import { createRegistry } from './commands.js';
 import * as bridge from './bridge.js';
+import { withInterfaceScore } from './score.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -466,7 +467,45 @@ const registry = createRegistry({
   'target': () => lastSummary,
   'show-tour': () => { tour.show({ force: true }); return true; },
   'host': () => bridge.detect(),
+  'load-run': ({ runId }) => loadRunDesigns(runId),
 });
+
+/**
+ * Put a compute run's designs into the same table as the browser's own.
+ *
+ * A design from a run carries an interface score the engine computed, and sometimes the predicted
+ * aligned error matrix behind it. Either way it goes through `withInterfaceScore`, which decides
+ * where the number comes from and registers the ipSAE column the first time one exists.
+ */
+async function loadRunDesigns(runId) {
+  const response = await fetch(`/bridge/runs/${encodeURIComponent(runId)}`);
+  if (!response.ok) throw new Error(`The bridge has no run ${runId}.`);
+  const run = await response.json();
+
+  const added = (run.designs || []).map((design) => {
+    const metrics = design.metrics || {};
+    return ranking.add(withInterfaceScore({
+      chainSequence: design.sequence,
+      sequence: design.sequence,
+      score: metrics.i_pTM ?? null,
+      recovery: null,
+      ipsae: metrics.ipSAE ?? null,
+      pae: design.pae,
+      chainIds: design.chainIds,
+      checkpointId: run.engine,
+      checkpointLabel: run.engine,
+      checkpointShort: run.engine,
+      cardId: null,
+      runId: run.runId,
+      structure: design.structure,
+    }));
+  });
+
+  status.info(added.length
+    ? `${added.length} design${added.length === 1 ? '' : 's'} from ${run.engine} on ${run.host}.`
+    : `Run ${runId} is ${run.state} and has accepted nothing yet.`);
+  return added.map(asPlainDesign);
+}
 
 /** A table row without the page's own bookkeeping, so what comes back is the design and nothing else. */
 function asPlainDesign(row) {

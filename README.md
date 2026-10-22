@@ -80,7 +80,8 @@ run would happen on.
 ```sh
 python3 -m http.server 8000      # serve the app; open http://localhost:8000/
 python3 bridge/protavia-bridge.py  # serve it with a compute host attached, on port 8773
-node --test tests/*.test.mjs     # 86 tests: arithmetic, structure, table, manifest
+node --test tests/*.test.mjs     # 100 tests: arithmetic, structure, table, manifest
+python3 -m unittest discover -s bridge -p 'test_*.py'   # 18 more, for the bridge adapter
 node scripts/results-chart.mjs   # redraw the Results chart from the measured numbers
 node scripts/mirror-manifest.mjs # refresh the NakliOS mirror's file list; exits 1 when stale
 npx wrangler deploy              # deploy to protavia.naklitechie.com

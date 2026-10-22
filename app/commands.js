@@ -107,6 +107,11 @@ export const COMMANDS = [
     params: [],
   },
   {
+    id: 'load-run',
+    summary: 'Read a compute run\u2019s accepted designs into the table beside the browser\u2019s own.',
+    params: [{ name: 'runId', type: 'string', required: true, note: 'from the bridge' }],
+  },
+  {
     id: 'show-tour',
     summary: 'Open the guided tour of the page.',
     params: [],
