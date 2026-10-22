@@ -123,9 +123,25 @@ The first adapter is FreeBindCraft, because it is the only one of the three that
 Silicon Mac. The contract has to survive BindCraft2 and BioEmu2 being added by someone who has a
 Linux machine with an NVIDIA card, which is why it is written down now rather than after.
 
-## Open, and needing a decision
+## What a run needs from the machine
 
-A run needs AlphaFold2 weights, which are several gigabytes, and FreeBindCraft's own ubiquitin
-example took 39.7 minutes on an M2 with 5.23 GiB of memory and accepted no design. Nothing in this
-repository installs any of that. Whether to install it here, and where the weights go, is a
-decision with disk and time attached.
+Measured here on 2026-10-22, after installing the engine and trying twice.
+
+A design run needs roughly **6 GB of headroom**, and it will not start without it. FreeBindCraft's
+own small ubiquitin example is documented at 5.23 GiB peak and 39.7 minutes on an M2 with 24 GiB.
+On a *busy* M2 with the same 24 GiB it does not run at all: metaljax refuses to allocate past an
+18.0 GB ceiling, and two attempts failed in 41 and 15 seconds with about 18 GB already claimed —
+11.4 GB anonymous, 3.6 GB wired, 2.8 GB compressed, 0.4 GB free. No single process was over 1 GB;
+it was the sum of several editor and browser processes.
+
+So "the engine is installed" and "a run can start" are, again, different things. The bridge reports
+the first. The second depends on what else the machine is doing, and the engine's own error says so
+clearly when it refuses.
+
+If you are checking whether a run will fit, read `vm_stat`, not `memory_pressure`. The latter
+reported "71% free" on this machine while `vm_stat` showed 0.4 GB actually free, because it counts
+reclaimable file-backed pages. That discrepancy produced a wrong diagnosis here before the right
+one.
+
+Raising `METALJAX_MEM_SYS_MB` would force a run through at the risk of paging the whole machine.
+That is the user's call, not the bridge's, and the bridge does not set it.
