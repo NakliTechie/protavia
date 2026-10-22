@@ -1,3 +1,9 @@
+# The checks that gate a push. Everything here runs with no dependencies: Node's own test runner,
+# and two scripts in this repository.
+#
+# This used to run `npm test`, which failed on every push since the repository was created, because
+# there is no package.json and there is not meant to be. A red build nobody reads is worse than no
+# build, so it now runs the tests that exist.
 name: Test
 
 on:
@@ -16,5 +22,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm test
-      - run: node scripts/vendor-naklios-sdk.mjs --file index.html --check
+
+      - name: Tests
+        run: node --test tests/*.test.mjs
+
+      - name: The NakliOS mirror list is current
+        run: node scripts/mirror-manifest.mjs
+
+      - name: The inlined NakliOS SDK is current
+        run: node scripts/vendor-naklios-sdk.mjs --file index.html --check
+
+      - name: The bridge starts and answers
+        run: |
+          python3 bridge/protavia-bridge.py --port 8899 &
+          for i in $(seq 1 20); do
+            curl -fsS http://127.0.0.1:8899/bridge/health >/dev/null 2>&1 && break
+            sleep 0.5
+          done
+          curl -fsS http://127.0.0.1:8899/bridge/health | tee /dev/stderr | grep -q '"bridge": "protavia"'
+          curl -fsS -o /dev/null http://127.0.0.1:8899/index.html
