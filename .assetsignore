@@ -9,6 +9,9 @@ vendor/onnxruntime-web/1.24.3/ort-wasm-simd-threaded.asyncify.wasm
 # The Worker's own source is deployed as code, not served as a file.
 src
 
+# The compute bridge is a program you run on your own machine, not part of the site.
+bridge
+
 # Not part of the app.
 .git
 .github

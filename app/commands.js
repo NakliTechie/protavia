@@ -102,6 +102,11 @@ export const COMMANDS = [
     params: [],
   },
   {
+    id: 'host',
+    summary: 'Read which machine a design run would happen on, and which engines it has.',
+    params: [],
+  },
+  {
     id: 'show-tour',
     summary: 'Open the guided tour of the page.',
     params: [],

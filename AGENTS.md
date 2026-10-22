@@ -5,6 +5,9 @@ Tier: **Tool** (one app, one page). It gains a compute host; if that host become
 ## Rules
 - Single page, native ES modules, no build step, no CDN at runtime. Vendored libraries are pinned in `vendor/` with licences and model weights recorded with their licences.
 - Data stays on the user's disk. Target structures and designs go to a compute host only when the user starts a run, and the app says which host.
+- The compute bridge serves the app as well as its own routes, because an https page cannot fetch
+  `http://127.0.0.1`. It never installs, ships or bundles an engine: the licence Protavia relies on
+  turns on the person having installed it themselves. See `docs/bridge-contract.md`.
 - Plan lives in `plan/` (a symlink outside git). Read `plan/pending.md` first.
 - Tests are Node's own runner, no dependencies: `node --test tests/*.test.mjs`. They cover the
   pure parts — the ipSAE arithmetic, the structure walk, sequence recovery, the ranking table's

@@ -9,6 +9,7 @@ import * as tour from './tour.js';
 import { summarise, extractBackbone } from './structure.js';
 import { DesignTable, allColumns } from './table.js';
 import { createRegistry } from './commands.js';
+import * as bridge from './bridge.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -36,6 +37,7 @@ const ui = {
   designSeed: $('design-seed'),
   designRun: $('design-run'),
   designNote: $('design-note'),
+  hostNote: $('host-note'),
   models: $('models'),
   designRanking: $('design-ranking'),
   designResults: $('design-results'),
@@ -463,6 +465,7 @@ const registry = createRegistry({
   'designs': () => ranking.visible().map(asPlainDesign),
   'target': () => lastSummary,
   'show-tour': () => { tour.show({ force: true }); return true; },
+  'host': () => bridge.detect(),
 });
 
 /** A table row without the page's own bookkeeping, so what comes back is the design and nothing else. */
@@ -605,5 +608,37 @@ ui.drop.addEventListener('drop', (e) => {
   if (file) loadFile(file);
 });
 
+/**
+ * Say which machine a design run would happen on, or that there is none. Shown once at boot and
+ * never behind a click: the exemption Protavia relies on turns on whose machine the engine is,
+ * so the reader should never have to ask.
+ */
+async function showHost() {
+  const found = await bridge.detect();
+  ui.hostNote.replaceChildren();
+
+  if (!found.present) {
+    ui.hostNote.textContent = found.why;
+    ui.hostNote.hidden = false;
+    return;
+  }
+
+  const where = document.createElement('b');
+  where.textContent = bridge.hostLine(found);
+  ui.hostNote.append('Compute host: ', where);
+
+  const usable = bridge.usableEngines(found);
+  const ready = usable.filter((e) => e.installed);
+  const line = document.createElement('span');
+  line.textContent = ready.length
+    ? ` \u00b7 ${ready.map((e) => e.label).join(', ')} ready.`
+    : ` \u00b7 no design engine installed. ${usable.map((e) => e.why).join(' ')}`;
+  ui.hostNote.append(line);
+  ui.hostNote.hidden = false;
+}
+
 // The page is useless without the viewer, so a boot failure is a hard failure.
 boot().catch((e) => status.fail('The viewer did not start.', e.message));
+
+// The bridge is a separate question from the viewer, so it never blocks the page.
+showHost().catch(() => {});

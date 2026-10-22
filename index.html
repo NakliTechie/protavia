@@ -150,6 +150,10 @@
   }
   table.ranking tr.filters input:focus, table.ranking tr.filters select:focus { border-color: var(--accent); outline: none; }
   .hint.count { display: flex; align-items: baseline; gap: .3rem; }
+  /* The machine a run would happen on. Never hidden behind a click: the licence Protavia relies
+     on turns on whose machine the engine is, so the answer is always on screen. */
+  #host-note { border-left: 2px solid var(--accent); padding-left: .5rem; margin-top: .6rem; }
+  #host-note b { color: var(--fg); font-weight: 600; }
   table.ranking tr[tabindex] { cursor: pointer; }
   table.ranking tr[tabindex]:hover td, table.ranking tr.picked td { background: var(--panel); }
   table.ranking tr.picked td { box-shadow: inset 2px 0 0 var(--accent); }
@@ -327,6 +331,7 @@
           <button id="design-run">Redesign backbone</button>
         </div>
         <p class="hint" id="design-note"></p>
+        <p class="hint" id="host-note" hidden></p>
         <div id="design-ranking"></div>
         <div id="design-results"></div>
       </div>

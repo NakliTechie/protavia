@@ -80,6 +80,10 @@
       "destination": "app/commands.js"
     },
     {
+      "source": "app/bridge.js",
+      "destination": "app/bridge.js"
+    },
+    {
       "source": "vendor/onnxruntime-web/1.24.3/ort.webgpu.bundle.min.mjs",
       "destination": "vendor/onnxruntime-web/1.24.3/ort.webgpu.bundle.min.mjs"
     },
