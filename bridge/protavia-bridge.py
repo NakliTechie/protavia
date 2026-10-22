@@ -56,6 +56,11 @@ ENGINES = [
         "note": "MIT. Runs on Apple Silicon. The design loop backpropagates through AlphaFold2.",
         # The repository root, however the person laid it out.
         "marker": "functions/biopython_utils.py",
+        # What a run actually needs, all of it. The interpreter alone is not enough: the
+        # installer creates the virtual environment early and downloads the AlphaFold weights
+        # last, so a checkout minutes into its install has one and not the other. Checking only
+        # the interpreter reported a half-installed engine as ready, which is how this was found.
+        "ready": [".venv-metaljax/bin/python", "params/params_model_1_ptm.npz"],
         "env": "FREEBINDCRAFT_HOME",
         "guesses": ["~/Code/FreeBindCraft", "~/FreeBindCraft", "~/src/FreeBindCraft"],
     },
@@ -67,6 +72,7 @@ ENGINES = [
         "runs_here": platform.system() == "Linux",
         "note": "Source-available. Needs Linux and an NVIDIA card; there is no CPU installation.",
         "marker": "install.sh",
+        "ready": [".venv/bin/python"],
         "env": "BINDCRAFT2_HOME",
         "guesses": ["~/Code/BindCraft2", "~/BindCraft2"],
     },
@@ -77,6 +83,7 @@ ENGINES = [
         "runs_here": platform.system() == "Linux",
         "note": "MIT. Ensembles and dynamics rather than a design loop. Linux and NVIDIA only.",
         "marker": "pyproject.toml",
+        "ready": [".venv/bin/python"],
         "env": "BIOEMU2_HOME",
         "guesses": ["~/Code/bioemu2", "~/bioemu2"],
     },
@@ -105,16 +112,24 @@ def find_engine(spec):
 
 
 def describe_engines():
-    """What this machine has, said plainly enough to act on."""
+    """What this machine has, said plainly enough to act on.
+
+    `present` is whether the files are here; `installed` is whether it could actually run. They
+    are different states and conflating them is a way to promise a run that cannot start: a
+    checkout halfway through its installer has every source file and no interpreter.
+    """
     out = []
     for spec in ENGINES:
         found = find_engine(spec)
+        missing = [m for m in spec["ready"] if not found or not (found / m).exists()]
+        ready = found is not None and not missing
         row = {
             "id": spec["id"],
             "label": spec["label"],
             "home": spec["home"],
             "note": spec["note"],
-            "installed": found is not None,
+            "present": found is not None,
+            "installed": ready,
             "path": str(found) if found else None,
             "runsHere": spec["runs_here"],
         }
@@ -124,6 +139,12 @@ def describe_engines():
             row["why"] = (
                 f"Not found here. Install it yourself, then point {spec['env']} at it or put it "
                 f"in one of: {', '.join(spec['guesses'])}."
+            )
+        elif not ready:
+            row["why"] = (
+                f"Found at {found}, but not ready to run: {', '.join(missing)} "
+                f"{'is' if len(missing) == 1 else 'are'} missing. "
+                f"Run its install script and let it finish."
             )
         out.append(row)
     return out

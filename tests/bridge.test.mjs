@@ -17,8 +17,8 @@ const health = (over = {}) => ({
   version: '0.1.0',
   host: { name: 'test-machine', platform: 'macOS 25.5.0', machine: 'arm64', cpus: 14 },
   engines: [
-    { id: 'freebindcraft', label: 'FreeBindCraft', installed: true, path: '/x', runsHere: true },
-    { id: 'bindcraft2', label: 'BindCraft2', installed: false, runsHere: false, why: 'Will not run on macOS.' },
+    { id: 'freebindcraft', label: 'FreeBindCraft', present: true, installed: true, path: '/x', runsHere: true },
+    { id: 'bindcraft2', label: 'BindCraft2', present: false, installed: false, runsHere: false, why: 'Will not run on macOS.' },
   ],
   ...over,
 });
@@ -116,11 +116,30 @@ test('an engine this machine cannot run is left out, installed ones come first',
   globalThis.location = { hostname: '127.0.0.1' };
   answers(health({
     engines: [
-      { id: 'a', label: 'Absent', installed: false, runsHere: true },
-      { id: 'b', label: 'Elsewhere', installed: false, runsHere: false },
-      { id: 'c', label: 'Here', installed: true, runsHere: true },
+      { id: 'a', label: 'Absent', present: false, installed: false, runsHere: true },
+      { id: 'b', label: 'Elsewhere', present: false, installed: false, runsHere: false },
+      { id: 'c', label: 'Here', present: true, installed: true, runsHere: true },
     ],
   }));
   await bridge.detect();
   assert.deepEqual(bridge.usableEngines().map((e) => e.label), ['Here', 'Absent']);
+});
+
+test('an engine whose installer has not finished is present but not installed', async () => {
+  // The two are different states. Conflating them promises a run that cannot start, which is
+  // what happened: the virtual environment appears minutes into the install and the weights
+  // arrive at the end, so checking the interpreter alone called a half-installed engine ready.
+  globalThis.location = { hostname: '127.0.0.1' };
+  answers(health({
+    engines: [{
+      id: 'freebindcraft', label: 'FreeBindCraft', present: true, installed: false,
+      runsHere: true, path: '/x', why: 'Found at /x, but not ready to run: params/... is missing.',
+    }],
+  }));
+  await bridge.detect();
+
+  const [engine] = bridge.usableEngines();
+  assert.equal(engine.present, true, 'the files are there');
+  assert.equal(engine.installed, false, 'but it cannot run yet');
+  assert.match(engine.why, /not ready to run/);
 });

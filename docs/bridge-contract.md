@@ -44,16 +44,23 @@ The socket binds to loopback. Another machine on the network cannot reach it.
   "version": "0.1.0",
   "host": { "name": "...", "platform": "macOS 25.5.0", "machine": "arm64", "cpus": 14 },
   "engines": [
-    { "id": "freebindcraft", "label": "FreeBindCraft", "installed": false, "path": null,
-      "runsHere": true, "why": "Not found here. Install it yourself, then point ..." }
+    { "id": "freebindcraft", "label": "FreeBindCraft", "present": true, "installed": false,
+      "path": "/Users/you/Code/FreeBindCraft", "runsHere": true,
+      "why": "Found at ..., but not ready to run: params/params_model_1_ptm.npz is missing." }
   ],
   "runs": []
 }
 ```
 
-`installed` is whether the files are here. `runsHere` is whether this machine could run it at all —
-false for BindCraft2 and BioEmu2 on macOS, because both need Linux and an NVIDIA card. An engine
-that is not installed always says `why`, in words that name the next step.
+Three fields, and they mean different things. `present` is whether the files are here. `installed`
+is whether it could actually run, which means every file a run needs: for FreeBindCraft, the
+virtual environment's interpreter **and** the AlphaFold weights. `runsHere` is whether this machine
+could run it at all — false for BindCraft2 and BioEmu2 on macOS, because both need Linux and an
+NVIDIA card. Anything short of ready always says `why`, naming what is missing.
+
+`present` and `installed` are separate because conflating them promises a run that cannot start.
+The installer creates the virtual environment within a minute and downloads the weights last, so
+for most of an installation the checkout has every source file and no means of running them.
 
 The three routes below are the contract for the next layer and are **not implemented yet**.
 
