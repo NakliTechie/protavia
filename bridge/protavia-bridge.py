@@ -25,15 +25,27 @@ import argparse
 import json
 import os
 import platform
-import shutil
+import signal
 import socket
-import subprocess
 import sys
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer, SimpleHTTPRequestHandler
+import threading
+import time
+import uuid
+from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 
-VERSION = "0.1.0"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from adapters import freebindcraft  # noqa: E402
+
+VERSION = "0.2.0"
 APP_ROOT = Path(__file__).resolve().parent.parent
+
+# Runs write here: settings, the engine's own output tree, and the log. Under the repository
+# rather than a temp directory, because a design run is hours of work and losing it to a reboot
+# would be its own kind of failure.
+RUNS_ROOT = APP_ROOT / "runs"
+
+ADAPTERS = {freebindcraft.ID: freebindcraft}
 
 # --- Engines -------------------------------------------------------------------------------------
 #
@@ -161,6 +173,127 @@ def describe_host():
     }
 
 
+# --- Runs ----------------------------------------------------------------------------------------
+#
+# One process per run, tracked in memory. The engine owns the work and the files; this owns the
+# handle and the question "is it still going". Nothing here outlives the bridge, by design: a run
+# whose bridge has gone is a run nobody is watching, and its output is still on disk.
+
+RUNS = {}
+RUNS_LOCK = threading.Lock()
+
+
+def start_run(request):
+    """Start one. Raises ValueError with a sentence a person can act on."""
+    engine_id = request.get("engine")
+    if not engine_id:
+        raise ValueError(f"Say which engine: one of {', '.join(ADAPTERS)}.")
+    adapter = ADAPTERS.get(engine_id)
+    if adapter is None:
+        raise ValueError(f'No adapter for "{engine_id}". There is one for: {", ".join(ADAPTERS)}.')
+
+    described = {e["id"]: e for e in describe_engines()}[engine_id]
+    if not described["installed"]:
+        raise ValueError(described.get("why", f"{described['label']} is not ready to run here."))
+
+    run_id = time.strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex[:6]
+    run_dir = RUNS_ROOT / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    log_path = run_dir / "engine.log"
+
+    log_handle = log_path.open("w", buffering=1)
+    try:
+        process = adapter.start(request, Path(described["path"]), run_dir, log_handle)
+    except adapter.Refused as e:
+        log_handle.close()
+        raise ValueError(str(e))
+
+    wanted = int((request.get("binder") or {}).get("count", 1))
+    record = {
+        "runId": run_id,
+        "engine": engine_id,
+        "host": describe_host()["name"],
+        "state": "running",
+        "startedAt": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "finishedAt": None,
+        "request": request,
+        "wanted": wanted,
+        "_process": process,
+        "_log": log_handle,
+        "_dir": run_dir,
+        "_adapter": adapter,
+    }
+    with RUNS_LOCK:
+        RUNS[run_id] = record
+    return run_id
+
+
+def read_run(run_id):
+    """Where a run has got to, and what it has produced so far."""
+    with RUNS_LOCK:
+        record = RUNS.get(run_id)
+    if record is None:
+        return None
+
+    process = record["_process"]
+    code = process.poll()
+    if code is not None and record["state"] == "running":
+        record["state"] = "done" if code == 0 else "failed"
+        record["exitCode"] = code
+        record["finishedAt"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+        record["_log"].close()
+
+    read = record["_adapter"].read(record["_dir"], record["wanted"])
+    out = {k: v for k, v in record.items() if not k.startswith("_")}
+    out.update(read)
+    out["log"] = tail(record["_dir"] / "engine.log", 40)
+    return out
+
+
+def stop_run(run_id):
+    """Stop a run and leave no process behind."""
+    with RUNS_LOCK:
+        record = RUNS.get(run_id)
+    if record is None:
+        return None
+    process = record["_process"]
+    if process.poll() is None:
+        # The engine runs in its own process group, so this reaches its children too.
+        try:
+            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+            process.wait(timeout=20)
+        except (ProcessLookupError, PermissionError):
+            pass
+        except Exception:
+            try:
+                os.killpg(os.getpgid(process.pid), signal.SIGKILL)
+            except Exception:
+                pass
+        record["state"] = "stopped"
+        record["finishedAt"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+        if not record["_log"].closed:
+            record["_log"].close()
+    return read_run(run_id)
+
+
+def tail(path, lines):
+    """The last few lines of the engine's own output, so a person can see what it is doing."""
+    try:
+        with path.open(errors="replace") as handle:
+            return [line.rstrip("\n") for line in handle.readlines()[-lines:]]
+    except OSError:
+        return []
+
+
+def list_runs():
+    with RUNS_LOCK:
+        ids = list(RUNS)
+    return [
+        {k: v for k, v in read_run(i).items() if k in ("runId", "engine", "state", "startedAt", "progress")}
+        for i in ids
+    ]
+
+
 # --- The server ----------------------------------------------------------------------------------
 
 
@@ -191,14 +324,47 @@ class Bridge(SimpleHTTPRequestHandler):
                     "version": VERSION,
                     "host": describe_host(),
                     "engines": describe_engines(),
-                    "runs": [],
+                    "runs": list_runs(),
                 }
             )
+            return
+        if self.path.rstrip("/") == "/bridge/runs":
+            self._json({"runs": list_runs()})
+            return
+        if self.path.startswith("/bridge/runs/"):
+            found = read_run(self.path[len("/bridge/runs/"):].split("?")[0])
+            self._json(found or {"error": "No such run."}, status=200 if found else 404)
             return
         if self.path.startswith("/bridge/"):
             self._json({"error": f"No bridge route {self.path}."}, status=404)
             return
         super().do_GET()
+
+    def do_POST(self):
+        if self.path.rstrip("/") != "/bridge/runs":
+            self._json({"error": f"No bridge route {self.path}."}, status=404)
+            return
+        try:
+            length = int(self.headers.get("content-length") or 0)
+            request = json.loads(self.rfile.read(length) or b"{}")
+        except (ValueError, json.JSONDecodeError) as e:
+            self._json({"error": f"That is not JSON I can read: {e}"}, status=400)
+            return
+        try:
+            run_id = start_run(request)
+        except ValueError as e:
+            # A refusal is the adapter saying what this engine cannot do. It is an answer, not a
+            # fault, so it says so plainly rather than as a stack trace.
+            self._json({"error": str(e)}, status=400)
+            return
+        self._json(read_run(run_id), status=201)
+
+    def do_DELETE(self):
+        if not self.path.startswith("/bridge/runs/"):
+            self._json({"error": f"No bridge route {self.path}."}, status=404)
+            return
+        stopped = stop_run(self.path[len("/bridge/runs/"):].split("?")[0])
+        self._json(stopped or {"error": "No such run."}, status=200 if stopped else 404)
 
     def log_message(self, fmt, *args):
         # One line per bridge call; serving the app's own files would drown it.
@@ -224,6 +390,7 @@ def main():
     print(f"Protavia bridge {VERSION}")
     print(f"  app:    http://{args.host}:{args.port}/")
     print(f"  health: http://{args.host}:{args.port}/bridge/health")
+    print(f"  runs:   {RUNS_ROOT}")
     print(f"  host:   {describe_host()['name']} "
           f"({os_name()} {platform.machine()}, {os.cpu_count()} cores)")
     if ready:

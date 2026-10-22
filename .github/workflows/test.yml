@@ -26,6 +26,9 @@ jobs:
       - name: Tests
         run: node --test tests/*.test.mjs
 
+      - name: Bridge adapter tests
+        run: python3 -m unittest discover -s bridge -p 'test_*.py'
+
       - name: The NakliOS mirror list is current
         run: node scripts/mirror-manifest.mjs
 

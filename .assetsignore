@@ -12,6 +12,9 @@ src
 # The compute bridge is a program you run on your own machine, not part of the site.
 bridge
 
+# A design run's output: structures, CSVs and logs, on the machine that produced them.
+runs
+
 # Not part of the app.
 .git
 .github

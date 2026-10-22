@@ -62,18 +62,24 @@ NVIDIA card. Anything short of ready always says `why`, naming what is missing.
 The installer creates the virtual environment within a minute and downloads the weights last, so
 for most of an installation the checkout has every source file and no means of running them.
 
-The three routes below are the contract for the next layer and are **not implemented yet**.
+The three routes below are **implemented**. No design run has completed through them yet.
 
 `POST /bridge/runs` — start one. The body is engine-agnostic; the adapter translates.
 
 ```json
 {
   "engine": "freebindcraft",
-  "target": { "source": "rcsb:1UBQ", "chain": "A", "hotspots": [54, 56, 66] },
+  "modality": "binder",
+  "target": { "path": "/Users/you/targets/1ubq.pdb", "chain": "A", "hotspots": [54, 56, 66] },
   "binder": { "lengths": [60, 100], "count": 10 },
-  "settings": { "seed": 42 }
+  "settings": { "seed": 42, "maxAttempts": 1, "rankBy": "ipSAE" }
 }
 ```
+
+A request this engine cannot honour comes back as 400 with a sentence naming what it cannot do,
+not a guess. `modality: "nanobody"` is refused and says BindCraft2 does that and needs Linux and an
+NVIDIA card. The alternative — quietly designing a plain binder instead — would be worse than no
+design.
 
 Returns `{ "runId": "..." }`. The app holds the run id and nothing else; the bridge owns the run.
 
@@ -92,8 +98,10 @@ Returns `{ "runId": "..." }`. The app holds the run id and nothing else; the bri
 `state` is one of `queued`, `running`, `done`, `failed`, `stopped`. `designs` grows as the run
 accepts them, so the page can show work in progress rather than a spinner for forty minutes.
 
-Each design carries its predicted aligned error matrix, which is what `app/ipsae.js` has been
-waiting for: the interface score is already written and tested, and has had no input.
+FreeBindCraft computes ipSAE itself and can rank by it, so `metrics.ipSAE` arrives with each
+design and the bridge asks for that ranking by default. The full predicted aligned error matrix,
+which is what `app/ipsae.js` takes, is in the engine's pickle files; reading it is not written yet,
+because no run has produced one to read.
 
 `DELETE /bridge/runs/<id>` — stop it. A run started here is stoppable from here.
 
