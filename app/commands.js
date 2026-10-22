@@ -74,6 +74,19 @@ export const COMMANDS = [
     ],
   },
   {
+    id: 'filter',
+    summary: 'Keep only the designs that are at least this good on one column.',
+    params: [
+      { name: 'column', type: 'string', required: true, note: 'a column id from list-columns' },
+      { name: 'value', type: 'number|string', note: 'a threshold, or omit to drop this filter' },
+    ],
+  },
+  {
+    id: 'clear-filters',
+    summary: 'Show every design again.',
+    params: [],
+  },
+  {
     id: 'list-columns',
     summary: 'List the design table’s columns, and say which of them may order it.',
     params: [],

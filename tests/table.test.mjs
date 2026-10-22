@@ -157,3 +157,135 @@ test('formatting shows a dash rather than a blank when a figure is missing', () 
   assert.equal(columnById('score').format(row), '—');
   assert.equal(columnById('recovery').format(design('a', 'a', 0.539, 0.8)), '53.9%');
 });
+
+// --- filtering ----------------------------------------------------------------------------------
+
+test('with no filter every design is visible', () => {
+  const t = table();
+  t.add(design('a', 'a', 0.4, 0.9));
+  t.add(design('b', 'b', 0.8, 0.7));
+  assert.equal(t.visible().length, 2);
+  assert.deepEqual(t.activeFilters(), []);
+});
+
+test('a threshold reads in the column\u2019s own better direction', () => {
+  const t = table();
+  t.add(design('low', 'low', 0.40, 0.90));
+  t.add(design('high', 'high', 0.80, 0.70));
+
+  // Recovery is better high, so 0.5 means "at least 0.5".
+  t.setFilter('recovery', 0.5);
+  assert.deepEqual(t.visible().map((r) => r.checkpointLabel), ['high']);
+
+  // Score is better low, so the same shape of call means "at most".
+  t.clearFilters();
+  t.setFilter('score', 0.8);
+  assert.deepEqual(t.visible().map((r) => r.checkpointLabel), ['high']);
+});
+
+test('the filter says what it means, in the units the column shows', () => {
+  const t = table();
+  t.add(design('a', 'a', 0.4, 0.9));
+  t.setFilter('recovery', 0.5);
+  t.setFilter('score', 0.8);
+  // Recovery is stored as a fraction and read as a percentage, so the sentence says 50%, not 0.5.
+  assert.deepEqual(t.activeFilters().map((f) => `${f.column} ${f.meaning}`),
+    ['recovery at least 50%', 'score at most 0.8']);
+  assert.equal(t.activeFilters()[0].value, 0.5, 'the stored value keeps the model\u2019s units');
+});
+
+test('a scaled threshold does not drift on the way to the sentence', () => {
+  const t = table();
+  t.add(design('a', 'a', 0.4, 0.9));
+  t.setFilter('recovery', 0.553);
+  assert.equal(t.activeFilters()[0].meaning, 'at least 55.3%');
+});
+
+test('filters combine: a design has to pass all of them', () => {
+  const t = table();
+  t.add(design('both', 'both', 0.80, 0.70));
+  t.add(design('recovery only', 'rec', 0.80, 0.95));
+  t.add(design('score only', 'sc', 0.40, 0.70));
+
+  t.setFilter('recovery', 0.5);
+  t.setFilter('score', 0.8);
+  assert.deepEqual(t.visible().map((r) => r.checkpointLabel), ['both']);
+});
+
+test('a text column filters on an exact value', () => {
+  const t = table();
+  t.add(design('solubleMPNN v_48_020', 'soluble 020', 0.9, 0.8));
+  t.add(design('ProteinMPNN v_48_020', 'MPNN 020', 0.5, 0.8));
+
+  t.setFilter('checkpoint', 'solubleMPNN v_48_020');
+  assert.deepEqual(t.visible().map((r) => r.checkpointShort), ['soluble 020']);
+});
+
+test('a design with no value for a filtered column is hidden, not kept', () => {
+  const t = table();
+  t.add(design('has', 'has', 0.80, 0.70));
+  t.add(design('none', 'none', null, null));
+
+  t.setFilter('recovery', 0.1);
+  assert.deepEqual(t.visible().map((r) => r.checkpointLabel), ['has']);
+});
+
+test('filtering never loses a design, and clearing brings it back', () => {
+  const t = table();
+  t.add(design('a', 'a', 0.40, 0.90));
+  t.add(design('b', 'b', 0.80, 0.70));
+
+  t.setFilter('recovery', 0.5);
+  assert.equal(t.visible().length, 1);
+  assert.equal(t.rows.length, 2, 'the rows themselves are untouched');
+  assert.equal(t.ordered().length, 2, 'ordered() still shows everything');
+
+  t.clearFilters();
+  assert.equal(t.visible().length, 2);
+});
+
+test('an empty value drops that filter', () => {
+  const t = table();
+  t.add(design('a', 'a', 0.40, 0.90));
+  t.setFilter('recovery', 0.5);
+  assert.equal(t.visible().length, 0);
+  t.setFilter('recovery', null);
+  assert.equal(t.visible().length, 1);
+});
+
+test('the visible designs stay in the current order', () => {
+  const t = table();
+  t.add(design('mid', 'mid', 0.60, 0.50));
+  t.add(design('high', 'high', 0.80, 0.95));
+  t.add(design('low', 'low', 0.40, 0.70));
+
+  t.setFilter('recovery', 0.5);
+  assert.deepEqual(t.visible().map((r) => r.checkpointLabel), ['high', 'mid']);
+  t.sortBy('recovery', false);
+  assert.deepEqual(t.visible().map((r) => r.checkpointLabel), ['mid', 'high']);
+});
+
+test('a column that may not rank may still be filtered', () => {
+  // The rule is about what orders the table, not about what you may threshold. The column
+  // registered earlier in this file is the shape ipSAE will arrive in.
+  const t = table();
+  t.add({ ...design('weak', 'weak', 0.5, 0.8), ipsae: 0.2 });
+  t.add({ ...design('strong', 'strong', 0.5, 0.8), ipsae: 0.9 });
+
+  assert.throws(() => t.sortBy('test-ipsae'), /never ranks the table/);
+  t.setFilter('test-ipsae', 0.5);
+  assert.deepEqual(t.visible().map((r) => r.checkpointLabel), ['strong']);
+});
+
+test('filtering on a column that does not exist says so', () => {
+  assert.throws(() => table().setFilter('no-such-column', 1), /No column called "no-such-column"/);
+});
+
+test('clearing the table clears its filters too', () => {
+  const t = table();
+  t.add(design('a', 'a', 0.40, 0.90));
+  t.setFilter('recovery', 0.5);
+  t.clear();
+  t.add(design('b', 'b', 0.40, 0.90));
+  assert.equal(t.visible().length, 1, 'a new target must not inherit the last one\u2019s filters');
+});

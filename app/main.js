@@ -449,8 +449,10 @@ const registry = createRegistry({
   'redesign': (args) => runRedesign(args),
   'rank': ({ column, descending }) => {
     ranking.sortBy(column, descending);
-    return ranking.ordered().map(asPlainDesign);
+    return ranking.visible().map(asPlainDesign);
   },
+  'filter': ({ column, value }) => ranking.setFilter(column, value ?? null).map(asPlainDesign),
+  'clear-filters': () => ranking.clearFilters().map(asPlainDesign),
   'list-columns': () => allColumns().map((c) => ({
     id: c.id,
     label: c.label,
@@ -458,7 +460,7 @@ const registry = createRegistry({
     rankable: c.rankable !== false,
     ...(c.rankable === false ? { whyNotRankable: c.whyNotRankable } : {}),
   })),
-  'designs': () => ranking.ordered().map(asPlainDesign),
+  'designs': () => ranking.visible().map(asPlainDesign),
   'target': () => lastSummary,
   'show-tour': () => { tour.show({ force: true }); return true; },
 });

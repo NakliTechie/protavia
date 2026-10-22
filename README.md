@@ -58,8 +58,7 @@ fraction of designed positions matching the real amino acid; the model sees only
 agreement is evidence it reads the fold, not evidence the design is good.
 
 Reproduce it: open the live site, press **Ubiquitin**, tick all three checkpoints, set sequences to
-5, and press **Redesign backbone**. Raw numbers: [`marketing/bench-ubiquitin.json`](marketing/bench-ubiquitin.json);
-the chart is drawn from them by `node scripts/results-chart.mjs`.
+5, and press **Redesign backbone**. Raw numbers in [`marketing/bench-ubiquitin.json`](marketing/bench-ubiquitin.json), charted by `node scripts/results-chart.mjs`.
 
 ## Driving it from a script
 
@@ -69,18 +68,19 @@ JavaScript in the tab can do what a person can:
 ```js
 await protavia.run('open-target', { id: '1ubq' });
 await protavia.run('redesign', { chain: 'A', checkpoints: ['v_48_020', 'soluble_v_48_020'], count: 5 });
+await protavia.run('filter', { column: 'recovery', value: 0.55 });   // at least 55% native
 await protavia.run('rank', { column: 'score' });
 protavia.commands();   // every command, its arguments, and which acts are the person's alone
 ```
 
 Opening a file from the disk is declared person-only: a browser hands a page a file only after a
-real click on a picker, so no script stands in for that.
+real click, so no script stands in for that.
 
 ## Commands
 
 ```sh
 python3 -m http.server 8000      # serve the app; open http://localhost:8000/
-node --test tests/*.test.mjs     # 63 tests: the arithmetic, the structure walk, the table, the manifest
+node --test tests/*.test.mjs     # 76 tests: arithmetic, structure, table, manifest
 node scripts/results-chart.mjs   # redraw the Results chart from the measured numbers
 node scripts/mirror-manifest.mjs # refresh the NakliOS mirror's file list; exits 1 when stale
 npx wrangler deploy              # deploy to protavia.naklitechie.com
@@ -94,8 +94,8 @@ node --test tests/*.test.mjs
 
 The tests cover what is arithmetic rather than a browser: the ipSAE interface score, recomputed
 from the two formulas the method is defined by; the walk over a structure's atoms; sequence
-recovery; the ranking table's columns, including its refusal to rank on a column declared as
-display-only; and whether the NakliOS mirror's file list is current.
+recovery; the table's columns, its filters and its refusal to rank on a display-only column; and
+whether the NakliOS mirror's file list is current.
 
 What a test cannot reach is checked by hand and recorded with its numbers in
 [`docs/DESIGN.md`](docs/DESIGN.md): `1ubq` and `1brs` give 660 and 5,153 atoms, matching

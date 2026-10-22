@@ -8,7 +8,7 @@ Tier: **Tool** (one app, one page). It gains a compute host; if that host become
 - Plan lives in `plan/` (a symlink outside git). Read `plan/pending.md` first.
 - Tests are Node's own runner, no dependencies: `node --test tests/*.test.mjs`. They cover the
   pure parts — the ipSAE arithmetic, the structure walk, sequence recovery, the ranking table's
-  columns, the command manifest, and whether the NakliOS mirror list is current.
+  columns and filters, the command manifest, and whether the NakliOS mirror list is current.
 
 ## Verification budget
 - No tests, evals or diagnostics between implementation steps. Build the whole batch, then check once at the batch boundary. A batch is one capability family, about a day of work, and closes early past that.

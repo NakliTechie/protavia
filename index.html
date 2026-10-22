@@ -142,6 +142,14 @@
   table.ranking th.fixed { cursor: help; font-style: italic; }
   table.ranking td { padding: .25rem .3rem; border-bottom: 1px solid var(--line); }
   table.ranking th.num, table.ranking td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.ranking tr.filters td { padding: .2rem .2rem .35rem; border-bottom: 1px solid var(--line); }
+  table.ranking tr.filters input, table.ranking tr.filters select {
+    width: 100%; min-width: 0; font: inherit; font-size: .72rem;
+    padding: .1rem .2rem; border: 1px solid var(--line); border-radius: 4px;
+    background: var(--bg); color: var(--fg);
+  }
+  table.ranking tr.filters input:focus, table.ranking tr.filters select:focus { border-color: var(--accent); outline: none; }
+  .hint.count { display: flex; align-items: baseline; gap: .3rem; }
   table.ranking tr[tabindex] { cursor: pointer; }
   table.ranking tr[tabindex]:hover td, table.ranking tr.picked td { background: var(--panel); }
   table.ranking tr.picked td { box-shadow: inset 2px 0 0 var(--accent); }
