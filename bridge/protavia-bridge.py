@@ -25,6 +25,7 @@ import argparse
 import json
 import os
 import platform
+import shutil
 import signal
 import socket
 import sys
@@ -205,7 +206,10 @@ def start_run(request):
     try:
         process = adapter.start(request, Path(described["path"]), run_dir, log_handle)
     except adapter.Refused as e:
+        # A refused request is not a run, so it should leave nothing behind. Without this, every
+        # rejected request left a directory holding an empty log.
         log_handle.close()
+        shutil.rmtree(run_dir, ignore_errors=True)
         raise ValueError(str(e))
 
     wanted = int((request.get("binder") or {}).get("count", 1))
