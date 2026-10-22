@@ -28,30 +28,46 @@ benefit", and directs it through their own tooling.
 
 ## What this means for Protavia's compute bridge
 
-Protavia is a web application, and the bridge starts a design run. If the bridge started a run on
-a machine Chirag operates, on behalf of someone else, that is a hosted service under the clause
-above and needs a commercial licence.
+**Who the user is, decided 2026-10-22: whoever installs the engine on their own machine.** Protavia
+is the control room. The person using it installs the engine themselves, on hardware they operate,
+and Protavia writes the run settings and reads the results back.
 
-So the rule is: **the bridge drives a machine the person running it installed the engine on
-themselves.** The app writes run settings and reads results back; it never operates the engine for
-anyone else. The interface names the host on screen, every time, so this is visible rather than
-assumed.
+That is the exemption quoted above, so BindCraft2 needs no commercial licence here and the engine
+is chosen on the science rather than on the terms.
 
-The same rule is what keeps Protavia a Tool rather than a Product under the project's tiering.
+Three rules follow, and none of them is optional.
+
+1. **Protavia never runs an engine on hardware Chirag operates, for anyone else.** That is the
+   hosted service the licence forbids, whatever the interface looks like.
+2. **Protavia never ships or bundles a preconfigured engine** — no container, no virtual machine
+   image, no installer that arrives ready to run. The licence names that explicitly as an attempt
+   to get around the restriction. The app may link to the engine's own installation guide, and
+   that is as far as it goes.
+3. **The interface names the host on screen, every time a run starts.** The user should never have
+   to guess whose machine their work is on.
+
+The same three rules keep Protavia a Tool rather than a Product under the project's tiering.
 Running the engine for other people would be a deliberate re-tier decided in writing, plus a
-commercial licence from the BindCraft2 authors. One rule settles both questions, which is why it
-is not revisited per engine.
+commercial licence from the BindCraft2 authors.
 
-## The other two candidate engines
+## Everything underneath, checked on 2026-10-22
 
-| Engine | Licence | Hosting restriction |
+Nothing below BindCraft2 restricts hosting, so no part of the stack rules an engine out.
+
+| Layer | Licence | Hosting restriction |
 |---|---|---|
+| [AlphaFold2](https://github.com/google-deepmind/alphafold) code | Apache 2.0 | none |
+| AlphaFold2 model parameters | CC BY 4.0 | none |
+| [ColabDesign](https://github.com/sokrypton/ColabDesign), the backpropagation machinery | Beer-ware | none |
+| [BindCraft](https://github.com/martinpacesa/BindCraft) version 1 | MIT | none |
 | [FreeBindCraft](https://github.com/cytokineking/FreeBindCraft) | MIT | none |
-| [BindCraft](https://github.com/martinpacesa/BindCraft) (version 1) | MIT | none |
-| [BindCraft2](https://github.com/PacesaLab/BindCraft2) | Source-available, hosting-restricted | as above |
+| [BindCraft2](https://github.com/PacesaLab/BindCraft2) | Source-available | as above, exemption applies |
 
-BioEmu2 is also under consideration and its terms are not yet read here; the engine choice is open
-and recorded in the workplan.
+The model parameters are the layer worth naming: they are CC BY 4.0, not a non-commercial licence,
+so they place no limit of their own on what the bridge may do.
 
-Licence texts for BindCraft version 1 and BindCraft2 were read from their repositories on
-2026-10-21. This is a record of what they say, not legal advice.
+BioEmu2's terms are not read here yet. The engine choice is recorded in the workplan.
+
+Licence texts were read from the repositories themselves: BindCraft version 1 and BindCraft2 on
+2026-10-21, the rest of the table on 2026-10-22. This is a record of what they say, not legal
+advice.
